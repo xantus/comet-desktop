@@ -15,7 +15,7 @@
 <% } %>
 <form method="POST">
 <div>
-Email: <input name="username" type="text" value="xantus@xantus.org"/>
+Email: <input name="username" type="text" value="test@cometdesktop.com"/>
 </div>
 <div>
 Password: <input name="password" type="password" value="testing"/>
