@@ -5,7 +5,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>\x{2604} Comet Desktop - Web Desktop - JavaScript Desktop - Ext Desktop [ v<%= $v %> ]</title>
+<title>&#x2604; Comet Desktop - Web Desktop - JavaScript Desktop - Ext Desktop [ v<%= $v %> ]</title>
 <meta http-equiv="generator" content="Sprocket" />
 <meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
