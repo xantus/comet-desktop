@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use FindBin;
+
+use lib "$FindBin::Bin/../mojo-lib";
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../../lib";
+
+$ENV{MOJO_APP} = 'CometDesktop';
+
+# Check if Mojo is installed
+eval 'use Mojolicious::Scripts';
+if ($@) {
+    print <<EOF;
+It looks like you don't have the Mojo Framework installed.
+Please visit http://mojolicious.org for detailed installation instructions.
+
+EOF
+    exit;
+}
+
+# Start the script system
+my $scripts = Mojolicious::Scripts->new;
+$scripts->run(@ARGV);

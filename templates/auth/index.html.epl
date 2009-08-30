@@ -1,0 +1,104 @@
+% my $c = shift;
+% my $google_analytics_code = $c->google_analytics_acct;
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>\x{2604} Comet Desktop - David Davis - Xantus [ v$v ]</title>
+<meta http-equiv="generator" content="Sprocket" />
+<meta http-equiv="imagetoolbar" content="no" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, cometd, dojo, extjs, ext, ajax, xantus, mtfnpy, david davis" />
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+<style type="text/css">
+#loading-mask{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20000;
+    background-color: #000;
+}
+#loading{
+    position: absolute;
+    left: 45%;
+    top: 40%;
+    padding: 2px;
+    z-index: 20001;
+    height: auto;
+}
+#loading .loading-indicator{
+    background: #000;
+    background-image:url(lib/Ext/resources/images/default/grid/loading.gif);
+    background-repeat: no-repeat;
+    background-position:bottom center;
+    color: #fff;
+    font: bold 13px tahoma,arial,helvetica;
+    padding: 20px;
+    margin: 0;
+    text-align:center;
+    height:auto;
+}
+</style>
+
+<!-- ExtJS CSS -->
+$extcss
+
+<!-- CSS -->
+$css
+
+</head>
+
+<body scroll="no">
+<div id="x-desktop">
+<div id="loading-mask"></div>
+<div id="loading">
+    <div class="loading-indicator"> Loading....</div>
+</div>
+</div>
+
+<div id="ux-taskbar">
+	<div id="ux-taskbar-start"></div>
+	<div id="ux-taskbar-panel-wrap">
+		<div id="ux-quickstart-panel"></div>
+		<div id="ux-taskbuttons-panel"></div>
+		<div id="ux-tray-panel"></div>
+	</div>
+<div class="x-clear"></div>
+</div>
+<!-- ExtJS -->
+$extjs
+
+$debug
+<!-- JS -->
+<script type="text/javascript">
+    if ( window.console ) {
+        window.log = function(m) { window.console.log(m); };
+    } else if ( Ext.log ) {
+        window.log = window.Ext.log;
+    } else {
+        window.log = Ext.emptyFn;
+    }
+    var desktopConfig = $config;
+</script>
+<script type="text/javascript" src="javascript.pl?v=$v&amp;h=$hash"></script>
+<% if ($google_analytics_code) { %>
+    <!-- GA -->
+    <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+        var pageTracker;
+        if ( window._gat ) {
+            pageTracker = _gat._getTracker("<%= $google_analytics_code %>");
+            pageTracker._trackPageview();
+        }
+    </script>
+<% } else { %>
+    <!-- GA Disabled -->
+<% } %>
+</body>
+</html>

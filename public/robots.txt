@@ -1,0 +1,10 @@
+User-agent: zombies
+Disallow: /brains
+
+User-agent: *
+Allow: /
+Allow: /login.html
+Disallow: /logout
+Disallow: /unload
+Disallow: /desktop
+

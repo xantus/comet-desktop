@@ -1,0 +1,3 @@
+#!/bin/sh
+#MOJO_MODE=prod
+MOJO_RELOAD=1 MOJO_LOADER_DEBUG=1 bin/desktop daemon --port 3000
