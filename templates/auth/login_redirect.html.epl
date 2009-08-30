@@ -1,12 +1,13 @@
 % my $c = shift;
 % my $google_analytics_code = $c->google_analytics_acct;
+% my $v = $c->desktop_version;
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>\x{2604} Comet Desktop - Web Desktop - JavaScript Desktop - Extjs - Comet [ v$v ]</title>
+<title>\x{2604} Comet Desktop - Web Desktop - JavaScript Desktop - Ext Desktop [ v<%= $v %> ]</title>
 <meta http-equiv="generator" content="Sprocket" />
-<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, javascript desktop, perl, javascript, sprocket, comet, cometd, dojo, extjs, ext, ajax, xantus, mtfnpy, david davis, sprocket, sprocket.socket, websocket, web socket, sprocket.gateway, javscript socket, poe, sprocketframework" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <style type="text/css">
@@ -18,7 +19,7 @@
 </head>
 <body>
     <h3>Comet Desktop, the web desktop.  Also known as a webOS, webtop, or JavaScript desktop</h3>
-    Comet Desktop usess technologies like: Extjs, ajax, web sockets (Sprocket.Socket and Sprocket.Gateway) and cross domain comet.
+    Comet Desktop uses technologies like: Extjs, ajax, web sockets (Sprocket.Socket and Sprocket.Gateway) and cross domain comet.
     <br/><br/>
     <div id="message"></div>
     <noscript>
@@ -32,11 +33,8 @@
         document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
     </script>
     <script type="text/javascript">
-        var pageTracker;
-        if ( window._gat ) {
-            pageTracker = _gat._getTracker("<%= $google_analytics_code %>");
-            pageTracker._trackPageview();
-        }
+        if ( window._gat )
+            _gat._getTracker("<%= $google_analytics_code %>")._trackPageview();
     </script>
 <% } else { %>
     <!-- GA Disabled -->

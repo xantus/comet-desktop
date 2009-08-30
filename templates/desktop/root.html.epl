@@ -8,12 +8,12 @@
 <title>&#x2604; Comet Desktop - [ v<%= $v %> ]</title>
 <meta http-equiv="generator" content="Mojolicious" />
 <meta http-equiv="imagetoolbar" content="no" />
-<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, cometd, dojo, extjs, ext, ajax, xantus, mtfnpy, david davis" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
 <style type="text/css">
-#loading-mask{
+#loading-mask {
     position: absolute;
     left: 0;
     top: 0;
@@ -22,7 +22,7 @@
     z-index: 20000;
     background-color: #000;
 }
-#loading{
+#loading {
     position: absolute;
     left: 45%;
     top: 40%;
@@ -30,17 +30,17 @@
     z-index: 20001;
     height: auto;
 }
-#loading .loading-indicator{
+#loading .loading-indicator {
     background: #000;
-    background-image:url(lib/ext-3.0.0/resources/images/default/grid/loading.gif);
+    background-image: url(lib/ext-3.0.0/resources/images/default/grid/loading.gif);
     background-repeat: no-repeat;
-    background-position:bottom center;
+    background-position: bottom center;
     color: #fff;
     font: bold 13px tahoma,arial,helvetica;
     padding: 20px;
     margin: 0;
-    text-align:center;
-    height:auto;
+    text-align: center;
+    height: auto;
 }
 </style>
 
@@ -48,7 +48,7 @@
 <link rel="stylesheet" type="text/css" href="lib/ext-3.0.0/resources/css/ext-all.css" />
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="css/desktop.css?v=<%= $v %>" />
+<link rel="stylesheet" type="text/css" href="css/desktop.css" />
 <link rel="stylesheet" type="text/css" href="css/bubble.css" />
  	
 </head>
@@ -71,7 +71,9 @@
 <!-- JS -->
 <script type="text/javascript">
     if ( window.console ) {
-        window.log = function(m) { window.console.log(m); };
+        window.log = function() {
+            console.log[ console.firebug ? 'apply' : 'call' ]( console, Array.prototype.slice.call( arguments ) );
+        };
     } else if ( Ext.log ) {
         window.log = window.Ext.log;
     } else {
@@ -81,7 +83,9 @@
 
 <!-- ExtJS -->
 <script type="text/javascript" src="lib/ext-3.0.0/adapter/ext/ext-base.js"></script>
-<script type="text/javascript" src="lib/ext-3.0.0/ext-all-debug.js"></script>
+<script type="text/javascript" src="lib/ext-3.0.0/ext-all.js"></script>
+
+<script type="text/javascript" src="lib/window-edge-snap.js"></script>
 
 <!-- Desktop Core -->
 <script type="text/javascript" src="core/StartMenu.js"></script>
@@ -89,7 +93,7 @@
 <script type="text/javascript" src="core/Desktop.js"></script>
 <script type="text/javascript" src="core/App.js"></script>
 <script type="text/javascript" src="core/Module.js"></script>
-<script type="text/javascript" src="core/sample.js"></script>
+<script type="text/javascript" src="core/base.js"></script>
 
 <% if ($ga_account) { %>
     <!-- GA -->
@@ -98,14 +102,12 @@
         document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
     </script>
     <script type="text/javascript">
-        var pageTracker;
-        if ( window._gat ) {
-            pageTracker = _gat._getTracker("<%= $ga_account %>");
-            pageTracker._trackPageview();
-        }
+        if ( window._gat )
+            _gat._getTracker("<%= $ga_account %>")._trackPageview();
     </script>
 <% } else { %>
     <!-- GA Disabled -->
 <% } %>
+
 </body>
 </html>
