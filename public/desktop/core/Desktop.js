@@ -45,6 +45,47 @@ Ext.Desktop = function(app){
     function layout(){
         desktopEl.setHeight(Ext.lib.Dom.getViewHeight()-taskbarEl.getHeight());
     }
+        
+    function showWin() {
+        // get all of the window positions in a simple x:y array
+        var loc = [];
+        this.manager.each(function(w) {
+            // TBD maximized?
+            if ( !w || !w.isVisible() || this === w )
+                return;
+            var box = w.getBox();
+            loc.push( box.x+':'+box.y );
+        }, this);
+
+        // compare the windows x:y until we find a window it won't directly overlap
+        var d = this.getBox();
+        var repos = false;
+        while ( loc.indexOf( d.x+':'+d.y ) != -1 ) {
+            // window directly overlaps another, offset it by 24,24
+            d.x += 24; d.y += 24;
+            repos = true;
+        }
+        // shift the window and save the position when it is done
+        if ( repos ) {
+            this.el.shift({
+                x: d.x,
+                y: d.y,
+                duration: .25,
+                callback: function() {
+                    this.setPosition( d.x, d.y );
+                },
+                scope: this
+            });
+        }
+
+        // fix an IE6 display bug
+        if ( Ext.isIE6 )
+            this.setWidth( d.width );
+    
+        // remove the listener because we only want this effect on first show
+        this.un( 'show', showWin, this );
+    }
+
     Ext.EventManager.onWindowResize(layout);
 
     this.layout = layout;
@@ -83,7 +124,11 @@ Ext.Desktop = function(app){
         	},
         	'close': {
         		fn: removeWin
-        	}
+        	},
+            'show': {
+                fn: showWin
+            },
+            scope: win
         });
         
         layout();
