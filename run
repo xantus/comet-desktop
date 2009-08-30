@@ -1,3 +1,5 @@
 #!/bin/sh
-#MOJO_MODE=prod
+# default mode is development, and writes to log/development.log
+# production mode writes to log/production.log
+#MOJO_MODE=production
 MOJO_RELOAD=1 MOJO_LOADER_DEBUG=1 bin/desktop daemon --port 3000
