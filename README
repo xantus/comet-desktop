@@ -1,0 +1,11 @@
+
+Comet Desktop v2
+Extjs Web Desktop
+
+Requirements (included)
+
+Mojo, http://mojolicious.org/
+DBIx::Simple
+MojoX::Session
+DBI
+
