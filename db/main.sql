@@ -11,6 +11,6 @@ CREATE TABLE users (
         password      VARCHAR(255) NOT NULL,
         UNIQUE(user_id)
     );
-INSERT INTO users VALUES('test','test@cometdesktop.org','testing');
+INSERT INTO users VALUES('test','test@cometdesktop.com','testing');
 COMMIT;
 
