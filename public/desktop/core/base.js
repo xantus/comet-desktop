@@ -301,6 +301,7 @@ new CometDesktop.App({
             },'-', {
                 text: 'Logout',
                 iconCls: 'logout',
+                handler: function() { window.location = '../logout'; },
                 scope: this
             }]
         };
