@@ -80,8 +80,8 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
         var viewTop = 0;
         var viewLeft = 0;
         // these offsets should come from somewhere...frameWidth / 2 maybe?
-        var viewBottom = ( Ext.lib.Dom.getViewHeight() - 4 );
-        var viewRight = ( Ext.lib.Dom.getViewWidth() - 4 );
+        var viewBottom = ( Ext.lib.Dom.getViewHeight() - 30 ); // task bar height: 30px
+        var viewRight = Ext.lib.Dom.getViewWidth();
         var lx = [];
         var ly = [];
         // check the edges of the viewport
