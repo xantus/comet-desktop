@@ -90,9 +90,6 @@
 <!-- Desktop Core -->
 <script type="text/javascript" src="core/StartMenu.js"></script>
 <script type="text/javascript" src="core/TaskBar.js"></script>
-<script type="text/javascript" src="core/Desktop.js"></script>
-<script type="text/javascript" src="core/App.js"></script>
-<script type="text/javascript" src="core/Module.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
 
 <% if ($ga_account) { %>
