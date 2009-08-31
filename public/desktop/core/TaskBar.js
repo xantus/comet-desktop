@@ -1,13 +1,4 @@
-/*!
- * Ext JS Library 3.0.0
- * Copyright(c) 2006-2009 Ext JS, LLC
- * licensing@extjs.com
- * http://www.extjs.com/license
- */
-/**
- * @class Ext.ux.TaskBar
- * @extends Ext.util.Observable
- */
+
 Ext.ux.TaskBar = function(app){
     this.app = app;
     this.init();
@@ -81,11 +72,6 @@ Ext.extend(Ext.ux.TaskBar, Ext.util.Observable, {
 });
 
 
-
-/**
- * @class Ext.ux.TaskBarContainer
- * @extends Ext.Container
- */
 Ext.ux.TaskBarContainer = Ext.extend(Ext.Container, {
     initComponent : function() {
         Ext.ux.TaskBarContainer.superclass.initComponent.call(this);
@@ -380,11 +366,6 @@ Ext.ux.TaskButtonsPanel = Ext.extend(Ext.BoxComponent, {
 });
 
 
-
-/**
- * @class Ext.ux.TaskBar.TaskButton
- * @extends Ext.Button
- */
 Ext.ux.TaskBar.TaskButton = function(win, el){
 	this.win = win;
     Ext.ux.TaskBar.TaskButton.superclass.constructor.call(this, {

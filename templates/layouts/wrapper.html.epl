@@ -1,9 +1,10 @@
 % my $c = shift;
-<!DOCTYPE HTML>
+% my $title = $c->stash( 'title' ) ? ' - '.$c->stash( 'title' ) : '';
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>&#x2604; Comet Desktop - <%= $c->stash( 'title' ) %></title>
+    <title>&#x2604; Comet Desktop<%= $title %> [ v<%= $v %> ]</title>
     <meta http-equiv="generator" content="Mojolicious" />
     <meta http-equiv="imagetoolbar" content="no" />
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />

@@ -1,11 +1,12 @@
 % my $c = shift;
 % my $ga_account = $c->google_analytics_acct;
 % my $v = $c->desktop_version;
+% my $title = $c->stash( 'title' ) ? ' - '.$c->stash( 'title' ) : '';
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>&#x2604; Comet Desktop - [ v<%= $v %> ]</title>
+<title>&#x2604; Comet Desktop<%= $title %> [ v<%= $v %> ]</title>
 <meta http-equiv="generator" content="Mojolicious" />
 <meta http-equiv="imagetoolbar" content="no" />
 <meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
@@ -59,7 +60,6 @@
     <div id="loading">
         <div class="loading-indicator"> Loading....</div>
     </div>
-    <div id="bubbleCt" style="padding-top: 5px;"></div>
 </div>
 
 <div id="ux-taskbar">

@@ -41,7 +41,7 @@ sub json_response {
 
     $self->res->code( 200 );
 
-    # or application/json?
+    # or application/json; charset=UTF-8
     $self->res->headers->content_type( $jsonp ? 'text/javascript+json' : 'text/javascript' );
 
     my $out = $self->json->objToJson( $data );
