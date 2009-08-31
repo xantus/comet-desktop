@@ -26,100 +26,79 @@ window.app = {
     register: Ext.emptyFn
 };
 
-CometDesktop.Desktop = function( app ) {
-	var taskbar = this.taskbar = new Ext.ux.TaskBar( app );
+CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
-	var desktopEl = Ext.get( 'x-desktop' );
-    var taskbarEl = Ext.get( 'ux-taskbar' );
-    var shortcuts = Ext.get( 'x-shortcuts' );
+    constructor: function( app ) {
+        this.taskbar = new Ext.ux.TaskBar( app );
 
-    var windows = new Ext.WindowGroup();
-    var activeWindow;
+        this.desktopEl = Ext.get( 'x-desktop' );
+        this.taskbarEl = Ext.get( 'ux-taskbar' );
+        this.shortcuts = Ext.get( 'x-shortcuts' );
 
-    function minimizeWin( win ) {
+        this.windowManager = new Ext.WindowGroup();
+        this.activeWindow = null;
+    
+        Ext.EventManager.onWindowResize( this.layout, this );
+
+        this.layout();
+
+        if ( this.shortcuts ) {
+            this.shortcuts.on( 'click', function( e, t ) {
+                if ( t = e.getTarget( 'dt', this.shortcuts ) ) {
+                    e.stopEvent();
+                    var module = this.getModule( t.id.replace( '-shortcut', '' ) );
+                    // TBD: impl module.launch() instead of this
+                    if ( module ) {
+                        if ( module.launcher.scope )
+                            module.launcher.handler.call( module.launcher.scope );
+                        else
+                            module.launcher.handler();
+                    }
+                }
+            }, this);
+        }
+    },
+
+    minimizeWin: function( win ) {
         win.minimized = true;
         win.hide();
-    }
+    },
 
-    function markActive( win ) {
-        if ( activeWindow && activeWindow != win )
-            markInactive(activeWindow);
-        taskbar.setActiveButton(win.taskButton);
-        activeWindow = win;
+    markActive: function( win ) {
+        if ( this.activeWindow && this.activeWindow !== win )
+            this.markInactive( this.activeWindow );
+        this.taskbar.setActiveButton( win.taskButton );
+        this.activeWindow = win;
         Ext.fly( win.taskButton.el ).addClass( 'active-win' );
         win.minimized = false;
-    }
+    },
 
-    function markInactive( win ) {
-        if ( win == activeWindow ) {
-            activeWindow = null;
+    markInactive: function( win ) {
+        if ( win == this.activeWindow ) {
+            this.activeWindow = null;
             Ext.fly( win.taskButton.el ).removeClass( 'active-win' );
         }
-    }
+    },
 
-    function removeWin( win ) {
-    	taskbar.removeTaskButton( win.taskButton );
-        layout();
-    }
+    removeWin: function( win ) {
+    	this.taskbar.removeTaskButton( win.taskButton );
+        this.layout();
+    },
 
-    function layout() {
-        desktopEl.setHeight( Ext.lib.Dom.getViewHeight() - taskbarEl.getHeight() );
-    }
+    layout: function() {
+        this.desktopEl.setHeight( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() );
+    },
 
-    function showWin() {
-        // get all of the window positions in a simple x:y array
-        var loc = [];
-        this.manager.each(function( w ) {
-            // TBD maximized?
-            if ( !w || !w.isVisible() || this === w )
-                return;
-            var box = w.getBox();
-            loc.push( box.x + ':' + box.y );
-        }, this);
-
-        // compare the windows x:y until we find a window it won't directly overlap
-        var d = this.getBox();
-        var repos = false;
-        while ( loc.indexOf( d.x + ':' + d.y ) != -1 ) {
-            // window directly overlaps another, offset it by 24,24
-            d.x += 24; d.y += 24;
-            repos = true;
-        }
-        // shift the window and save the position when it is done
-        if ( repos ) {
-            this.el.shift({
-                x: d.x,
-                y: d.y,
-                duration: .25,
-                callback: function() {
-                    this.setPosition( d.x, d.y );
-                },
-                scope: this
-            });
-        }
-
-        // fix an IE6 display bug
-        if ( Ext.isIE6 )
-            this.setWidth( d.width );
-
-        // remove the listener because we only want this effect on first show
-        this.un( 'show', showWin, this );
-    }
-
-    Ext.EventManager.onWindowResize( layout );
-
-    this.layout = layout;
-
-    this.createWindow = function( config, cls ) {
+    createWindow: function( config, cls ) {
     	var win = new ( cls || Ext.Window )(
             Ext.applyIf( config || {}, {
-                manager: windows,
+                manager: this.windowManager,
                 minimizable: true,
                 maximizable: true
             })
         );
-        win.render( desktopEl );
-        win.taskButton = taskbar.addTaskButton( win );
+        win.render( this.desktopEl );
+        win.taskButton = this.taskbar.addTaskButton( win );
 
         win.cmenu = new Ext.menu.Menu({
             items: [
@@ -131,69 +110,97 @@ CometDesktop.Desktop = function( app ) {
 
         win.on({
         	'activate': {
-        		fn: markActive
+        		fn: this.markActive
         	},
         	'beforeshow': {
-        		fn: markActive
+        		fn: this.markActive
         	},
         	'deactivate': {
-        		fn: markInactive
+        		fn: this.markInactive
         	},
         	'minimize': {
-        		fn: minimizeWin
+        		fn: this.minimizeWin
         	},
         	'close': {
-        		fn: removeWin
+        		fn: this.removeWin
         	},
-            'show': {
-                fn: showWin
-            },
-            scope: win
+            scope: this
         });
 
-        layout();
+        // TBD move this to a Window class
+        function showWin() {
+            // get all of the window positions in a simple x:y array
+            var loc = [];
+            this.manager.each(function( w ) {
+                // TBD maximized?
+                if ( !w || !w.isVisible() || this === w )
+                    return;
+                var box = w.getBox();
+                loc.push( box.x + ':' + box.y );
+            }, this);
+
+            // compare the windows x:y until we find a window it won't directly overlap
+            var d = this.getBox();
+            var repos = false;
+            while ( loc.indexOf( d.x + ':' + d.y ) != -1 ) {
+                // window directly overlaps another, offset it by 24,24
+                d.x += 24; d.y += 24;
+                repos = true;
+            }
+            // shift the window and save the position when it is done
+            if ( repos ) {
+                this.el.shift({
+                    x: d.x,
+                    y: d.y,
+                    duration: .25,
+                    callback: function() {
+                        this.setPosition( d.x, d.y );
+                    },
+                    scope: this
+                });
+            }
+
+            // fix an IE6 display bug
+            if ( Ext.isIE6 )
+                this.setWidth( d.width );
+
+            // remove the listener because we only want this effect on first show
+            this.un( 'show', showWin, this );
+        }
+
+        win.on( 'show', showWin, win );
+
+        this.layout();
         return win;
-    };
+    },
 
-    this.getManager = function() {
-        return windows;
-    };
+    getManager: function() {
+        return this.windowManager;
+    },
 
-    this.getWindow = function( id ) {
-        return windows.get( id );
-    };
+    getWindow: function( id ) {
+        return this.windowManager.get( id );
+    },
 
-    this.getWinWidth = function() {
+    getWinWidth: function() {
 		var width = Ext.lib.Dom.getViewWidth();
 		return width < 200 ? 200 : width;
-	};
+	},
 
-	this.getWinHeight = function() {
-		var height = ( Ext.lib.Dom.getViewHeight() - taskbarEl.getHeight() );
+	getWinHeight: function() {
+		var height = ( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() );
 		return height < 100 ? 100 : height;
-	};
+	},
 
-	this.getWinX = function( width ) {
+	getWinX: function( width ) {
 		return ( Ext.lib.Dom.getViewWidth() - width ) / 2
-	};
+	},
 
-	this.getWinY = function( height ) {
-		return ( Ext.lib.Dom.getViewHeight() - taskbarEl.getHeight() - height ) / 2;
-	};
+	getWinY: function( height ) {
+		return ( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() - height ) / 2;
+	}
 
-    layout();
-
-    if ( shortcuts ) {
-        shortcuts.on('click', function( e, t ) {
-            if ( t = e.getTarget( 'dt', shortcuts ) ) {
-                e.stopEvent();
-                var module = app.getModule( t.id.replace( '-shortcut', '' ) );
-                if ( module )
-                    module.createWindow();
-            }
-        });
-    }
-};
+});
 
 /* -------------------------------------------------------------------------*/
 
@@ -251,9 +258,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         return []; // overridden later
     },
 
-    getStartConfig: function () {
-
-    },
+    getStartConfig: Ext.emptyFn,
 
     startup: Ext.emptyFn,
 
