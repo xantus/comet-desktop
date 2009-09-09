@@ -91,6 +91,7 @@
 <script type="text/javascript" src="core/StartMenu.js"></script>
 <script type="text/javascript" src="core/TaskBar.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
+<script type="text/javascript" src="core/keymanager.js"></script>
 
 <% if ($ga_account) { %>
     <!-- GA -->

@@ -37,10 +37,12 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
         this.windowManager = new Ext.WindowGroup();
         this.activeWindow = null;
-    
+
         Ext.EventManager.onWindowResize( this.layout, this );
 
         this.layout();
+
+        this.keyManager = new CometDesktop.KeyManager();
 
         if ( this.shortcuts ) {
             this.shortcuts.on( 'click', function( e, t ) {
@@ -97,6 +99,10 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                 maximizable: true
             })
         );
+
+        if ( win.captureKeypress )
+            this.keyManager.register( win );
+
         win.render( this.desktopEl );
         win.taskButton = this.taskbar.addTaskButton( win );
 
