@@ -736,3 +736,11 @@ select{
 	position:relative;
 }
 
+/* system icons */
+
+/* TODO better icons */
+/* available, away, busy, invisible, offline */
+
+.user-status-available-icon {
+    background-image: url(../images/member.gif) !important;
+}

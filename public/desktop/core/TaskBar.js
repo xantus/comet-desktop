@@ -1,11 +1,9 @@
 
-Ext.ux.TaskBar = function(app){
-    this.app = app;
-    this.init();
-}
+Ext.ux.TaskBar = Ext.extend( Ext.util.Observable, {
 
-Ext.extend(Ext.ux.TaskBar, Ext.util.Observable, {
-    init : function(){
+    constructor: function( app ) {
+        this.app = app;
+/*
 		this.startMenu = new Ext.ux.StartMenu(Ext.apply({
 			iconCls: 'user',
 			height: 300,
@@ -33,26 +31,27 @@ Ext.extend(Ext.ux.TaskBar, Ext.util.Observable, {
         });
 
         var width = this.startBtn.getEl().getWidth()+10;
-        
+*/
+        var width = 30;
         var sbBox = new Ext.BoxComponent({
 			el: 'ux-taskbar-start',
 	        id: 'TaskBarStart',
 	        minWidth: width,
-			region:'west',
+			region: 'west',
 			split: true,
 			width: width
 		});
-		
+
 		this.tbPanel = new Ext.ux.TaskButtonsPanel({
 			el: 'ux-taskbuttons-panel',
 			id: 'TaskBarButtons',
 			region:'center'
 		});
-				
-        var container = new Ext.ux.TaskBarContainer({
+
+        this.container = new Ext.ux.TaskBarContainer({
 			el: 'ux-taskbar',
 			layout: 'border',
-			items: [sbBox,this.tbPanel]
+			items: [ sbBox, this.tbPanel ]
 		});
 		
 		return this;
@@ -72,7 +71,8 @@ Ext.extend(Ext.ux.TaskBar, Ext.util.Observable, {
 });
 
 
-Ext.ux.TaskBarContainer = Ext.extend(Ext.Container, {
+Ext.ux.TaskBarContainer = Ext.extend( Ext.Container, {
+
     initComponent : function() {
         Ext.ux.TaskBarContainer.superclass.initComponent.call(this);
         
@@ -93,9 +93,10 @@ Ext.ux.TaskBarContainer = Ext.extend(Ext.Container, {
         this.renderTo = this.el;
     },
 
-    fireResize : function(w, h){
+    fireResize : function(w, h) {
         this.fireEvent('resize', this, w, h, w, h);
     }
+
 });
 
 
@@ -104,7 +105,8 @@ Ext.ux.TaskBarContainer = Ext.extend(Ext.Container, {
  * @class Ext.ux.TaskButtonsPanel
  * @extends Ext.BoxComponent
  */
-Ext.ux.TaskButtonsPanel = Ext.extend(Ext.BoxComponent, {
+Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
+
 	activeButton: null,
 	enableScroll: true,
 	scrollIncrement: 0,
@@ -366,36 +368,37 @@ Ext.ux.TaskButtonsPanel = Ext.extend(Ext.BoxComponent, {
 });
 
 
-Ext.ux.TaskBar.TaskButton = function(win, el){
-	this.win = win;
-    Ext.ux.TaskBar.TaskButton.superclass.constructor.call(this, {
-        iconCls: win.iconCls,
-        text: Ext.util.Format.ellipsis(win.title, 12),
-        renderTo: el,
-        handler : function(){
-            if(win.minimized || win.hidden){
-                win.show();
-            }else if(win == win.manager.getActive()){
-                win.minimize();
-            }else{
-                win.toFront();
-            }
-        },
-        clickEvent:'mousedown',
-        template: new Ext.Template(
-			'<table cellspacing="0" class="x-btn {3}"><tbody><tr>',
-			'<td class="ux-taskbutton-left"><i>&#160;</i></td>',
-            '<td class="ux-taskbutton-center"><em class="{5} unselectable="on">',
-                '<button class="x-btn-text {2}" type="{1}" style="height:28px;">{0}</button>',
-            '</em></td>',
-            '<td class="ux-taskbutton-right"><i>&#160;</i></td>',
-			"</tr></tbody></table>")            
-    });
-};
+Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
 
-Ext.extend(Ext.ux.TaskBar.TaskButton, Ext.Button, {
-    onRender : function(){
-        Ext.ux.TaskBar.TaskButton.superclass.onRender.apply(this, arguments);
+    constructor: function( win, el ) {
+        this.win = win;
+        Ext.ux.TaskBar.TaskButton.superclass.constructor.call(this, {
+            iconCls: win.iconCls,
+            text: Ext.util.Format.ellipsis( win.title, 12 ),
+            renderTo: el,
+            handler: function() {
+                if ( win.minimized || win.hidden )
+                    win.show();
+                else if( win == win.manager.getActive() )
+                    win.minimize();
+                else
+                    win.toFront();
+            },
+            clickEvent: 'mousedown',
+            template: new Ext.Template(
+                '<table cellspacing="0" class="x-btn {3}"><tbody><tr>',
+                '<td class="ux-taskbutton-left"><i>&#160;</i></td>',
+                '<td class="ux-taskbutton-center"><em class="{5} unselectable="on">',
+                    '<button class="x-btn-text {2}" type="{1}" style="height:28px;">{0}</button>',
+                '</em></td>',
+                '<td class="ux-taskbutton-right"><i>&#160;</i></td>',
+                "</tr></tbody></table>"
+            )            
+        });
+    },
+
+    onRender: function() {
+        Ext.ux.TaskBar.TaskButton.superclass.onRender.apply( this, arguments );
 
         this.cmenu = new Ext.menu.Menu({
             items: [{
@@ -442,12 +445,12 @@ Ext.extend(Ext.ux.TaskBar.TaskButton, Ext.Button, {
         }, this);
     },
     
-    closeWin : function(cMenu, e, win){
-		if(!win.isVisible()){
+    closeWin: function( cMenu, e, win ) {
+		if ( !win.isVisible() )
 			win.show();
-		}else{
+		else
 			win.restore();
-		}
 		win.close();
 	}
+
 });

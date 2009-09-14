@@ -47,25 +47,25 @@
 
 <!-- ExtJS CSS -->
 <link rel="stylesheet" type="text/css" href="lib/ext-3.0.0/resources/css/ext-all.css" />
+<!--
+<link rel="stylesheet" type="text/css" href="lib/ext-3.0.0/resources/css/slate/css/xtheme-slate.css" />
+-->
 
 <!-- CSS -->
 <link rel="stylesheet" type="text/css" href="css/desktop.css" />
-<link rel="stylesheet" type="text/css" href="css/bubble.css" />
- 	
+
 </head>
 
 <body scroll="no">
-<div id="x-desktop">
-    <div id="loading-mask"></div>
-    <div id="loading">
-        <div class="loading-indicator"> Loading....</div>
-    </div>
+<div id="loading-mask"></div>
+<div id="loading">
+    <div class="loading-indicator"> Loading....</div>
 </div>
 
 <div id="ux-taskbar">
-	<div id="ux-taskbar-start"></div>
-	<div id="ux-taskbuttons-panel"></div>
-	<div class="x-clear"></div>
+    <div id="ux-taskbar-start"></div>
+    <div id="ux-taskbuttons-panel"></div>
+    <div class="x-clear"></div>
 </div>
 
 <!-- JS -->

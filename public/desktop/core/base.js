@@ -26,21 +26,47 @@ window.app = {
     register: Ext.emptyFn
 };
 
+
 CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
     constructor: function( app ) {
         this.taskbar = new Ext.ux.TaskBar( app );
+        var center;
+        this.viewport = new Ext.Viewport({
+            layout: 'border',
+            items:[
+                new CometDesktop.ToolPanel({ region: 'north' }),
+                this.center = new Ext.BoxComponent({
+                    region: 'center',
+                    height: '100%',
+                    width: '100%'
+                }), /*
+                {
+                    region: 'east',
+                    width: 200,
+                    title: 'East',
+                    collapsible: true,
+                    items: [
+                        {
+                            html: 'test'
+                        }
+                    ]
+                }, */ 
+                {
+                    region: 'south',
+                    width: '100%',
+                    height: 30,
+                    border: false,
+                    items: this.taskbar.container
+                }
+            ]
+        });
 
-        this.desktopEl = Ext.get( 'x-desktop' );
         this.taskbarEl = Ext.get( 'ux-taskbar' );
         this.shortcuts = Ext.get( 'x-shortcuts' );
 
         this.windowManager = new Ext.WindowGroup();
         this.activeWindow = null;
-
-        Ext.EventManager.onWindowResize( this.layout, this );
-
-        this.layout();
 
         this.keyManager = new CometDesktop.KeyManager();
 
@@ -84,17 +110,14 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
     removeWin: function( win ) {
     	this.taskbar.removeTaskButton( win.taskButton );
-        this.layout();
-    },
-
-    layout: function() {
-        this.desktopEl.setHeight( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() );
     },
 
     createWindow: function( config, cls ) {
     	var win = new ( cls || Ext.Window )(
             Ext.applyIf( config || {}, {
                 manager: this.windowManager,
+                constrain: true,
+                constrainHeader: true,
                 minimizable: true,
                 maximizable: true
             })
@@ -103,7 +126,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         if ( win.captureKeypress )
             this.keyManager.register( win );
 
-        win.render( this.desktopEl );
+        win.render( this.center.el );
         win.taskButton = this.taskbar.addTaskButton( win );
 
         win.cmenu = new Ext.menu.Menu({
@@ -175,8 +198,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         }
 
         win.on( 'show', showWin, win );
-
-        this.layout();
+        
         return win;
     },
 
@@ -205,6 +227,139 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 	getWinY: function( height ) {
 		return ( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() - height ) / 2;
 	}
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
+
+    constructor: function( config ) {
+        var dateMenu = new Ext.menu.DateMenu({
+            handler: function(dp, date){
+                Ext.example.msg('Date Selected', 'You chose {0}.', date.format('M j, Y'));
+            }
+        });
+
+        var colorMenu = new Ext.menu.ColorMenu({
+            handler: function(cm, color){
+                Ext.example.msg('Color Selected', 'You chose {0}.', color);
+            }
+        });
+
+        var menu = new Ext.menu.Menu({
+            id: 'systemMenu',
+            style: {
+                overflow: 'visible'
+            },
+            items: [
+                {
+                    text: 'Custom Setting',
+                    checked: true,
+                    checkHandler: Ext.emptyFn
+                }, '-', {
+                    text: 'Theme',
+                    menu: {
+                        items: [
+                            '<b class="menu-title">Choose a Theme</b>',
+                            {
+                                text: 'Aero Glass',
+                                checked: true,
+                                group: 'theme',
+                                checkHandler: Ext.emptyFn
+                            }, {
+                                text: 'Vista Black',
+                                checked: false,
+                                group: 'theme',
+                                checkHandler: Ext.emptyFn
+                            }, {
+                                text: 'Gray Theme',
+                                checked: false,
+                                group: 'theme',
+                                checkHandler: Ext.emptyFn
+                            }, {
+                                text: 'Default Theme',
+                                checked: false,
+                                group: 'theme',
+                                checkHandler: Ext.emptyFn
+                            }
+                        ]
+                    }
+                },{
+                    text: 'Choose a Date',
+                    iconCls: 'calendar',
+                    menu: dateMenu
+                },{
+                    text: 'Choose a Color',
+                    menu: colorMenu
+                }
+            ]
+        });
+        
+        var userMenu = new Ext.menu.Menu({
+            id: 'userMenu',
+            style: {
+                overflow: 'visible'
+            },
+            items: [
+                {
+                    text: 'Available',
+                    checked: true,
+                    group: 'status',
+                    checkHandler: Ext.emptyFn
+                }, {
+                    text: 'Away',
+                    checked: false,
+                    group: 'status',
+                    checkHandler: Ext.emptyFn
+                }, {
+                    text: 'Busy',
+                    checked: false,
+                    group: 'status',
+                    checkHandler: Ext.emptyFn
+                }, {
+                    text: 'Invisible',
+                    checked: false,
+                    group: 'status',
+                    checkHandler: Ext.emptyFn
+                }, {
+                    text: 'Offline',
+                    checked: false,
+                    group: 'status',
+                    checkHandler: Ext.emptyFn
+                }, '-', {
+                    text: 'Log Out...',
+                    handler: function() { window.location = '../logout'; }
+                }
+            ]
+        });
+
+        CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {        
+            region: 'north',
+            width: '100%',
+            height: 30,
+            plain: true,
+            border: false,
+            items: [
+                {
+                    text: 'Applications',
+                    handler: Ext.emptyFn
+                }, ' ', ' ',
+                {
+                    text: 'Places',
+                    handler: Ext.emptyFn
+                }, ' ', ' ', {
+                    text: 'System',
+                    menu: menu
+                }, '-', '->', '-', {
+                    id: 'system-user-menu',
+//                    iconCls: 'user-status-available-icon',
+                    text: 'Guest User',
+                    menu: userMenu
+                }
+            ]
+        }) );
+    }
 
 });
 
@@ -271,7 +426,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     initModules: function( ms ) {
 		for ( var i = 0, len = ms.length; i < len; i++ ) {
             var m = ms[ i ];
-            this.launcher.add( m.launcher );
+            //this.launcher.add( m.launcher );
             m.app = this;
             if ( m.launcher.autoStart )
                 if ( m.launcher.scope )
