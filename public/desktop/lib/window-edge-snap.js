@@ -1,6 +1,6 @@
 
 /* Window Edge Snapping for Extjs 
- * Version: 1.7
+ * Version: 1.8
  *
  * Copyright (c) 2008-2009 - David W Davis, All Rights Reserved
  *
@@ -28,7 +28,7 @@ Ext.override( Ext.Window, {
 // but since Ext.Window does not pass a config obj to Ext.Window.DD
 // we'll just set them here
 Ext.ux.WindowSnap = {
-    version: '1.7',
+    version: '1.8',
     snapRange: 25, // px
     dragSnap: false,
     dropSnap: true,
@@ -77,13 +77,15 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
     setSnapXY: function( fly, x, y, drop ) {
         var box = this.win.getBox();
         var range = Ext.ux.WindowSnap.snapRange;
-        var viewTop = 0;
-        var viewLeft = 0;
-        var viewBottom = ( Ext.lib.Dom.getViewHeight() - 30 ); // task bar height: 30px
-        var viewRight = Ext.lib.Dom.getViewWidth();
+        // get the window's parent container
+        var el = Ext.fly( this.win.el.parent() );
+        var viewTop = el.getTop();
+        var viewLeft = el.getLeft();
+        var viewBottom = el.getBottom();
+        var viewRight = el.getRight();
         var lx = [];
         var ly = [];
-        // check the edges of the viewport
+        // check the edges of the window's parent
         // right and left
         if ( Math.abs( x - viewLeft ) < range )
             lx.push( viewLeft );
@@ -174,7 +176,7 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
             snapDD.push( box );
             */
         });
-        /* XXX sort by lastAccess?
+        /* XXX sort by lastAccess (or zIndex)?
         this.snapDD = this.snapDD.sort(function(a,b) {
             return b.a < a.a ? -1 : ( ( b.a > a.a ) ? 1 : 0 );
         });
