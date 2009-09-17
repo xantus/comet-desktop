@@ -32,10 +32,11 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
     constructor: function( app ) {
         this.taskbar = new Ext.ux.TaskBar( app );
         var center;
+        this.toolPanel = new CometDesktop.ToolPanel({ region: 'north' }),
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
-                new CometDesktop.ToolPanel({ region: 'north' }),
+                this.toolPanel,
                 this.center = new Ext.BoxComponent({
                     region: 'center',
                     height: '100%',
@@ -182,10 +183,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                     x: d.x,
                     y: d.y,
                     duration: .25,
-                    callback: function() {
-                        this.setPosition( d.x, d.y );
-                    },
-                    scope: this
+                    callback: this.setPosition.createDelegate( this, [ d.x, d.y ] )
                 });
             }
 
@@ -235,66 +233,120 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
     constructor: function( config ) {
-        var dateMenu = new Ext.menu.DateMenu({
-            handler: function(dp, date){
-                Ext.example.msg('Date Selected', 'You chose {0}.', date.format('M j, Y'));
-            }
+        var appsMenu = new Ext.menu.Menu({
+            id: 'appsMenu',
+            style: {
+                overflow: 'visible'
+            },
+            items: [
+                '-', {
+                    text: 'Add/Remove&hellip;',
+                    iconCls: 'cd-icon-apps-system-addremove',
+                    handler: Ext.emptyFn
+                }
+            ]
+        });
+        
+        var placesMenu = new Ext.menu.Menu({
+            id: 'placesMenu',
+            style: {
+                overflow: 'visible'
+            },
+            items: [
+                {
+                    text: 'Home Folder',
+                    iconCls: 'cd-icon-place-home',
+                    handler: Ext.emptyFn
+                }, {
+                    text: 'Desktop',
+                    iconCls: 'cd-icon-place-desktop',
+                    handler: Ext.emptyFn
+                }, '-', {
+                    text: 'Computer',
+                    iconCls: 'cd-icon-place-computer',
+                    handler: Ext.emptyFn
+                }
+            ]
         });
 
-        var colorMenu = new Ext.menu.ColorMenu({
-            handler: function(cm, color){
-                Ext.example.msg('Color Selected', 'You chose {0}.', color);
-            }
-        });
-
-        var menu = new Ext.menu.Menu({
+        var systemMenu = new Ext.menu.Menu({
             id: 'systemMenu',
             style: {
                 overflow: 'visible'
             },
             items: [
                 {
-                    text: 'Custom Setting',
-                    checked: true,
-                    checkHandler: Ext.emptyFn
-                }, '-', {
-                    text: 'Theme',
+                    text: 'Preferences',
+                    iconCls: 'cd-icon-system-prefs',
                     menu: {
                         items: [
-                            '<b class="menu-title">Choose a Theme</b>',
                             {
-                                text: 'Aero Glass',
-                                checked: true,
-                                group: 'theme',
-                                checkHandler: Ext.emptyFn
+                                text: 'About Me',
+                                iconCls: 'cd-icon-system-prefs-about',
+                                handler: Ext.emptyFn
                             }, {
-                                text: 'Vista Black',
-                                checked: false,
-                                group: 'theme',
-                                checkHandler: Ext.emptyFn
+                                text: 'Appearance',
+                                iconCls: 'cd-icon-system-prefs-appearance',
+                                handler: Ext.emptyFn
                             }, {
-                                text: 'Gray Theme',
-                                checked: false,
-                                group: 'theme',
-                                checkHandler: Ext.emptyFn
+                                text: 'Main Menu',
+                                iconCls: 'cd-icon-system-prefs-mainmenu',
+                                handler: Ext.emptyFn
                             }, {
-                                text: 'Default Theme',
-                                checked: false,
-                                group: 'theme',
-                                checkHandler: Ext.emptyFn
+                                text: 'Sound',
+                                iconCls: 'cd-icon-system-prefs-sound',
+                                handler: Ext.emptyFn
+                            }, {
+                                text: 'Windows',
+                                iconCls: 'cd-icon-system-prefs-windows',
+                                handler: Ext.emptyFn
                             }
                         ]
                     }
-                },{
-                    text: 'Choose a Date',
-                    iconCls: 'calendar',
-                    menu: dateMenu
-                },{
-                    text: 'Choose a Color',
-                    menu: colorMenu
+                }, {
+                    text: 'Administration',
+                    iconCls: 'cd-icon-system-admin',
+                    menu: {
+                        items: [
+                            {
+                                text: 'Language Support',
+                                iconCls: 'cd-icon-system-admin-locale',
+                                handler: Ext.emptyFn
+                            }, {
+                                text: 'Login Window',
+                                iconCls: 'cd-icon-system-admin-login',
+                                handler: Ext.emptyFn
+                            }, {
+                                text: 'System Monitor',
+                                iconCls: 'cd-icon-system-admin-system',
+                                handler: Ext.emptyFn
+                            }, {
+                                text: 'Time and Date',
+                                iconCls: 'cd-icon-system-admin-datetime',
+                                handler: Ext.emptyFn
+                            }, {
+                                text: 'Users and Groups',
+                                iconCls: 'cd-icon-system-admin-users',
+                                handler: Ext.emptyFn
+                            }
+                        ]
+                    }
+                }, '-', {
+                    text: 'Help and Support',
+                    iconCls: 'cd-icon-system-help',
+                    handler: Ext.emptyFn
+                }, {
+                    text: 'About Comet Desktop',
+                    iconCls: 'cd-icon-system-about',
+                    handler: Ext.emptyFn
                 }
             ]
         });
+
+        var checkHandler = function( item, checked ) {
+            if ( checked )
+                Ext.getCmp( 'system-user-menu' ).setIconClass( item.iconCls );
+        };
         
         var userMenu = new Ext.menu.Menu({
             id: 'userMenu',
@@ -304,35 +356,66 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             items: [
                 {
                     text: 'Available',
+                    iconCls: 'cd-icon-user-status-available',
                     checked: true,
                     group: 'status',
-                    checkHandler: Ext.emptyFn
+                    checkHandler: checkHandler
                 }, {
                     text: 'Away',
+                    iconCls: 'cd-icon-user-status-away',
                     checked: false,
                     group: 'status',
-                    checkHandler: Ext.emptyFn
+                    checkHandler: checkHandler
                 }, {
                     text: 'Busy',
+                    iconCls: 'cd-icon-user-status-busy',
                     checked: false,
                     group: 'status',
-                    checkHandler: Ext.emptyFn
+                    checkHandler: checkHandler
                 }, {
                     text: 'Invisible',
+                    iconCls: 'cd-icon-user-status-invisible',
                     checked: false,
                     group: 'status',
-                    checkHandler: Ext.emptyFn
+                    checkHandler: checkHandler
                 }, {
                     text: 'Offline',
+                    iconCls: 'cd-icon-user-status-offline',
                     checked: false,
                     group: 'status',
-                    checkHandler: Ext.emptyFn
+                    checkHandler: checkHandler
+                }, '-', {
+                    text: 'Lock screen',
+                    iconCls: 'cd-icon-user-lock',
+                    handler: Ext.emptyFn
                 }, '-', {
                     text: 'Log Out...',
+                    iconCls: 'cd-icon-user-logout',
                     handler: function() { window.location = '../logout'; }
                 }
             ]
         });
+        
+        var dateMenu = new Ext.menu.DateMenu({
+            handler: function( dp, date ) {
+                //Ext.example.msg('Date Selected', 'You chose {0}.', date.format('M j, Y'));
+            }
+        });
+
+        var dateControl = new Ext.Action({
+            text: '',
+            menu: dateMenu
+        });
+        
+        var dr = Ext.util.Format.dateRenderer('D M j, H:i');
+        var setDate = function() {
+            var dt = new Date;
+            dateControl.setText( dr( dt ) );
+            // defer until after the nearest minute
+            setDate.defer( ( 61 - dt.format('s') ) * 1000 );
+        };
+
+        setDate();
 
         CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {        
             region: 'north',
@@ -343,18 +426,20 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             items: [
                 {
                     text: 'Applications',
-                    handler: Ext.emptyFn
+                    iconCls: 'cd-icon-apps',
+                    menu: appsMenu
+                    //menu: new Ext.ux.menu.StoreMenu()
                 }, ' ', ' ',
                 {
                     text: 'Places',
-                    handler: Ext.emptyFn
+                    menu: placesMenu
                 }, ' ', ' ', {
                     text: 'System',
-                    menu: menu
-                }, '-', '->', '-', {
+                    menu: systemMenu
+                }, '-', '->', dateControl, '-', {
                     id: 'system-user-menu',
-//                    iconCls: 'user-status-available-icon',
                     text: 'Guest User',
+                    iconCls: 'cd-icon-user-status-available',
                     menu: userMenu
                 }
             ]
@@ -395,7 +480,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         this.desktop = new CometDesktop.Desktop( this );
 
-		this.launcher = this.desktop.taskbar.startMenu;
+        this.launcher = Ext.getCmp( 'appsMenu' );
 
 		this.modules = this.getModules();
         if ( this.modules.length )
@@ -426,7 +511,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     initModules: function( ms ) {
 		for ( var i = 0, len = ms.length; i < len; i++ ) {
             var m = ms[ i ];
-            //this.launcher.add( m.launcher );
+            // insert apps before the - and add/remove menu items
+            this.launcher.insert( this.launcher.items.length - 2, m.launcher );
             m.app = this;
             if ( m.launcher.autoStart )
                 if ( m.launcher.scope )
@@ -473,6 +559,81 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         if ( !this.sha1 )
             this.sha1 = new CometDesktop.SHA1();
         return this.sha1.hex( data );
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+Ext.namespace( 'Ext.ux.menu' );
+
+Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
+
+    loadMsg: Ext.LoadMask.prototype.msg || 'Loading...',
+
+    constructor: function() {
+        Ext.ux.menu.StoreMenu.superclass.constructor.apply( this, arguments );
+
+        this.loaded = false;
+
+        if ( !this.store ) {
+            if ( this.url ) {
+                this.store = new Ext.data.SimpleStore({
+                    fields: [ 'config' ],
+                    url: this.url,
+                    baseParams: this.baseParams || {}
+                });
+            } else {
+                this.local = true;
+                this.loaded = true;
+                this.store = new Ext.data.ArrayStore({
+                    fields: [ 'config' ],
+                    data: this.data || [ { text: 'No menu config specified' } ]
+                });
+            }
+        }
+
+        this.store.on( 'beforeload', this._storeOnBeforeLoad, this );
+        this.store.on( 'load', this._storeOnLoad, this );
+        
+        this.on( 'show', this._onShow, this );
+    },
+    
+    _onShow: function() {
+        if ( this.loaded )
+            this.updateMenu( this.store.getRange() );
+        else 
+            this.store.load();
+    },
+
+    _storeOnBeforeLoad: function( store ) {
+        store.baseParams = this.baseParams;
+        this.updateMenu();
+    },
+
+    _storeOnLoad: function( store, records ) {
+        this.updateMenu( records );     
+    },
+
+    updateMenu: function( records ) {
+        this.removeAll();
+        this.el.sync();
+
+        if ( !records ) {
+            if ( this.local )
+                return;
+            this.add( String.format( '<span class="loading-indicator">{0}</span>', this.loadMsg ) );
+            return;
+        }
+
+        this.loaded = true;
+
+        for ( var i = 0, len = records.length; i < len; i++ ) {
+            if ( records[ i ].json.menu )
+                records[ i ].json.menu = eval( records[ i ].json.menu );
+
+            this.add( records[ i ].json );
+        }
     }
 
 });
