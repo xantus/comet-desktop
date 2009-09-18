@@ -64,7 +64,7 @@
 </div>
 
 <div id="ux-taskbar">
-    <div id="ux-taskbar-start"></div>
+    <div id="ux-taskbar-start"><div id="ux-show-desktop-button"></div></div>
     <div id="ux-taskbuttons-panel"></div>
     <div class="x-clear"></div>
 </div>
@@ -86,6 +86,8 @@
 <script type="text/javascript" src="lib/ext-3.0.0/adapter/ext/ext-base.js"></script>
 <script type="text/javascript" src="lib/ext-3.0.0/ext-all.js"></script>
 
+<!-- PubSub and Window Snapping -->
+<script type="text/javascript" src="lib/Sprocket/PubSub.js"></script>
 <script type="text/javascript" src="lib/window-edge-snap.js"></script>
 
 <!-- Desktop Core -->

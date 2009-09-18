@@ -30,13 +30,14 @@ window.app = {
 CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
     constructor: function( app ) {
+        this.subscribe( '*', this.logEvents, this );
+
         this.taskbar = new Ext.ux.TaskBar( app );
         var center;
-        this.toolPanel = new CometDesktop.ToolPanel({ region: 'north' }),
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
-                this.toolPanel,
+                this.toolPanel = new CometDesktop.ToolPanel({ region: 'north' }),
                 this.center = new Ext.BoxComponent({
                     region: 'center',
                     height: '100%',
@@ -52,7 +53,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                             html: 'test'
                         }
                     ]
-                }, */ 
+                }, */
                 {
                     region: 'south',
                     width: '100%',
@@ -86,6 +87,28 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                 }
             }, this);
         }
+
+        this.minimizeAll = true;
+        this.subscribe( '/desktop/show', this.showDesktop, this );
+    },
+
+    logEvents: function() {
+        log(arguments);
+    },
+
+    showDesktop: function() {
+        this.windowManager.each(function( win ) {
+            if ( this.minimizeAll ) {
+                win.minimize();
+            } else {
+                if ( !win.isVisible() )
+                    win.show();
+                else
+                    win.restore();
+            }
+        }, this);
+        // XXX this allows it to toggle
+        //this.minimizeAll = this.minimizeAll === false;
     },
 
     minimizeWin: function( win ) {
@@ -129,13 +152,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
         win.render( this.center.el );
         win.taskButton = this.taskbar.addTaskButton( win );
-
-        win.cmenu = new Ext.menu.Menu({
-            items: [
-
-            ]
-        });
-
+        win.cmenu = new Ext.menu.Menu({ items: [] });
         win.animateTarget = win.taskButton.el;
 
         win.on({
@@ -196,7 +213,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         }
 
         win.on( 'show', showWin, win );
-        
+
         return win;
     },
 
@@ -246,7 +263,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }
             ]
         });
-        
+
         var placesMenu = new Ext.menu.Menu({
             id: 'placesMenu',
             style: {
@@ -347,7 +364,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             if ( checked )
                 Ext.getCmp( 'system-user-menu' ).setIconClass( item.iconCls );
         };
-        
+
         var userMenu = new Ext.menu.Menu({
             id: 'userMenu',
             style: {
@@ -389,13 +406,13 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     iconCls: 'cd-icon-user-lock',
                     handler: Ext.emptyFn
                 }, '-', {
-                    text: 'Log Out...',
+                    text: 'Log Out&hellip;',
                     iconCls: 'cd-icon-user-logout',
                     handler: function() { window.location = '../logout'; }
                 }
             ]
         });
-        
+
         var dateMenu = new Ext.menu.DateMenu({
             handler: function( dp, date ) {
                 //Ext.example.msg('Date Selected', 'You chose {0}.', date.format('M j, Y'));
@@ -406,7 +423,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             text: '',
             menu: dateMenu
         });
-        
+
         var dr = Ext.util.Format.dateRenderer('D M j, H:i');
         var setDate = function() {
             var dt = new Date;
@@ -417,7 +434,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
         setDate();
 
-        CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {        
+        CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {
             region: 'north',
             width: '100%',
             height: 30,
@@ -436,7 +453,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, ' ', ' ', {
                     text: 'System',
                     menu: systemMenu
-                }, '-', '->', dateControl, '-', {
+                }, '-', '->', '-', dateControl, '-', {
                     id: 'system-user-menu',
                     text: 'Guest User',
                     iconCls: 'cd-icon-user-status-available',
@@ -444,6 +461,22 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }
             ]
         }) );
+
+        this.on('render', function() {
+            new Ext.dd.DropTarget( this.el, {
+                ddGroup: 'toolbar-group',
+                copy: false,
+                notifyDrop: function() {
+                    log('drop');
+                    return true;
+                },
+                notifyEnter: function() {
+                    log('enter');
+                    //startButton.showMenu();
+                }
+            });
+        }, this);
+
     }
 
 });
@@ -569,7 +602,7 @@ Ext.namespace( 'Ext.ux.menu' );
 
 Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
 
-    loadMsg: Ext.LoadMask.prototype.msg || 'Loading...',
+    loadMsg: Ext.LoadMask.prototype.msg || 'Loading&hellip;',
 
     constructor: function() {
         Ext.ux.menu.StoreMenu.superclass.constructor.apply( this, arguments );
@@ -595,14 +628,14 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
 
         this.store.on( 'beforeload', this._storeOnBeforeLoad, this );
         this.store.on( 'load', this._storeOnLoad, this );
-        
+
         this.on( 'show', this._onShow, this );
     },
-    
+
     _onShow: function() {
         if ( this.loaded )
             this.updateMenu( this.store.getRange() );
-        else 
+        else
             this.store.load();
     },
 
@@ -612,7 +645,7 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
     },
 
     _storeOnLoad: function( store, records ) {
-        this.updateMenu( records );     
+        this.updateMenu( records );
     },
 
     updateMenu: function( records ) {
