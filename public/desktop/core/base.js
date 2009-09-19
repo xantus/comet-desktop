@@ -29,11 +29,18 @@ window.app = {
 
 CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 
-    constructor: function( app ) {
-        this.subscribe( '*', this.logEvents, this );
+    constructor: function( config ) {
+        Ext.apply( this, config );
 
-        this.taskbar = new Ext.ux.TaskBar( app );
-        var center;
+        window.app = this;
+
+        this.subscribe( '*', this.logEvents, this );
+        this.subscribe( '/desktop/app/register', this.eventRegisterApp, this );
+        this.subscribe( '/desktop/show', this.eventShowDesktop, this );
+
+        this.minimizeAll = true;
+
+        this.taskbar = new Ext.ux.TaskBar( this );
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
@@ -87,16 +94,38 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                 }
             }, this);
         }
-
-        this.minimizeAll = true;
-        this.subscribe( '/desktop/show', this.showDesktop, this );
     },
 
-    logEvents: function() {
-        log(arguments);
+    logEvents: function( ev, ch ) {
+        log('EVENT LOG: channel:'+ch+' event:'+Ext.encode( ev ));
     },
 
-    showDesktop: function() {
+    eventRegisterApp: function( ev ) {
+        // defer early registrations until ready
+        if ( !this.isReady )
+            return Ext.onReady( this.eventRegisterApp.createDelegate( this, [ ev ] ) );
+        
+        log('app registered:'+ev.channel);
+
+        // insert apps before the - and add/remove menu items
+        this.launcher.insert(
+            this.launcher.items.length - 2,
+            Ext.apply( ev, {
+                handler: this.launchHandler.createDelegate( this, [ ev.channel ] )
+            } )
+        );
+
+        // hack
+        if ( ev.autoStart )
+            this.launchHandler( ev.channel );
+    },
+
+    launchHandler: function( channel ) {
+        log('launch app:'+channel);
+        this.publish( channel, { action: 'launch' } );
+    },
+
+    eventShowDesktop: function() {
         this.windowManager.each(function( win ) {
             if ( this.minimizeAll ) {
                 win.minimize();
@@ -445,11 +474,25 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: 'Applications',
                     iconCls: 'cd-icon-apps',
                     menu: appsMenu
-                    //menu: new Ext.ux.menu.StoreMenu()
                 }, ' ', ' ',
                 {
                     text: 'Places',
-                    menu: placesMenu
+//                    menu: placesMenu
+                    menu: new Ext.ux.menu.StoreMenu({ data: [
+                        {
+                            text: 'Home Folder',
+                            iconCls: 'cd-icon-place-home',
+                            channel: '/places/home'
+                        }, {
+                            text: 'Desktop',
+                            iconCls: 'cd-icon-place-desktop',
+                            channel: '/places/desktop'
+                        }, '-', {
+                            text: 'Computer',
+                            iconCls: 'cd-icon-place-computer',
+                            channel: '/places/computer'
+                        }
+                    ] })
                 }, ' ', ' ', {
                     text: 'System',
                     menu: systemMenu
@@ -462,20 +505,41 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             ]
         }) );
 
-        this.on('render', function() {
-            new Ext.dd.DropTarget( this.el, {
-                ddGroup: 'toolbar-group',
-                copy: false,
-                notifyDrop: function() {
-                    log('drop');
-                    return true;
-                },
-                notifyEnter: function() {
-                    log('enter');
-                    //startButton.showMenu();
-                }
-            });
-        }, this);
+        this.on( 'render', this._onRender, this );
+    },
+
+    _onRender: function() {
+            
+        this.dropTarget = new Ext.dd.DropTarget( this.el, {
+            ddGroup: 'toolbar-group',
+            copy: false,
+            notifyDrop: function() {
+                log('drop');
+                return true;
+            },
+            notifyEnter: function() {
+                log('enter');
+                // open menu, etc
+            }
+        });
+
+        this.menu = new Ext.menu.Menu({
+            items: [{
+                text: 'Add to Panel&hellip;',
+                handler: Ext.emptyFn
+            },{
+                text: 'Properties',
+                handler: Ext.emptyFn
+            }]
+        });
+
+        this.el.on( 'contextmenu', function( e ) {
+            e.stopEvent();
+            if ( !this.menu.el )
+                this.menu.render();
+            
+            this.menu.showAt( e.getXY() );
+        }, this );
 
     }
 
@@ -483,16 +547,15 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
 /* -------------------------------------------------------------------------*/
 
-CometDesktop.App = Ext.extend( Ext.util.Observable, {
+// TODO combine into CometDesktop.Desktop
+CometDesktop.App = Ext.extend( CometDesktop.Desktop, {
 
     isReady: false,
     startMenu: null,
     modules: null,
 
-    constructor: function( config ) {
-        Ext.apply( this, config );
-
-        window.app = this;
+    constructor: function() {
+        CometDesktop.App.superclass.constructor.apply( this, arguments );
 
         // TBD set up this.gaTracker using the account number from the config
 
@@ -509,18 +572,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.time( 'start' );
 		Ext.QuickTips.init();
 
-        this.startConfig = this.startConfig || this.getStartConfig();
-
-        this.desktop = new CometDesktop.Desktop( this );
-
         this.launcher = Ext.getCmp( 'appsMenu' );
 
-		this.modules = this.getModules();
-        if ( this.modules.length )
-            this.initModules( this.modules );
-
-        Ext.fly('loading').remove();
-        Ext.fly('loading-mask').fadeOut({ remove: true, duration: 2 });
+        Ext.fly( 'loading' ).remove();
+        Ext.fly( 'loading-mask' ).fadeOut( { remove: true, duration: 1.5 } );
 
         this.startup();
 
@@ -532,12 +587,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     time: function( name ) {
         this.timing.push( [ name, new Date() ] );
     },
-
-    getModules: function() {
-        return []; // overridden later
-    },
-
-    getStartConfig: Ext.emptyFn,
 
     startup: Ext.emptyFn,
 
@@ -665,38 +714,12 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
             if ( records[ i ].json.menu )
                 records[ i ].json.menu = eval( records[ i ].json.menu );
 
-            this.add( records[ i ].json );
+            this.add(
+                Ext.apply( records[ i ].json, {
+                    handler: app.launchHandler.createDelegate( app, [ records[ i ].json.channel ] )
+                } )
+            );
         }
-    }
-
-});
-
-/* -------------------------------------------------------------------------*/
-
-new CometDesktop.App({
-
-	getModules: function() {
-		return [
-            new CometDesktop.SampleApp(),
-            new CometDesktop.SampleApp2()
-		];
-	},
-
-    getStartConfig: function() {
-        return {
-            title: 'Guest',
-            iconCls: 'user',
-            toolItems: [{
-                text: 'Settings',
-                iconCls: 'settings',
-                scope: this
-            },'-', {
-                text: 'Logout',
-                iconCls: 'logout',
-                handler: function() { window.location = '../logout'; },
-                scope: this
-            }]
-        };
     }
 
 });
@@ -706,11 +729,94 @@ new CometDesktop.App({
 CometDesktop.Module = Ext.extend( Ext.util.Observable, {
 
     constructor: function( config ) {
-        Ext.apply(this, config);
+        Ext.apply( this, config );
+        this.appId = Ext.id( undefined, 'app-' );
+        this.appChannel = '/desktop/app/' + this.appId;
         this.init();
     },
 
     init: Ext.emptyFn
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+CometDesktop.KeyManager = Ext.extend( Ext.util.Observable, {
+
+    constructor: function() {
+        this.wins = [];
+        this.active = false;
+
+        if ( Ext.isIE )
+            document.onkeydown = this.keyEvent.createDelegate( this );
+        else
+            document.onkeypress = this.keyEvent.createDelegate( this );
+/*
+        if ( Ext.isIE )
+            Ext.EventManager.on( document, 'keydown', this.keyEvent, this );
+        else
+            Ext.EventManager.on( document, 'keypress', this.keyEvent, this );
+*/
+    },
+
+    keyEvent: function( ev ) {
+        if ( !this.active )
+            return;
+
+        if ( !this.activeWin ) {
+            this.active = false;
+            log('active win is gone!');
+            return;
+        }
+
+        return this.activeWin.fireEvent( 'documentKeypress', ev );
+    },
+
+    register: function( win ) {
+        if ( Ext.indexOf( win ) == -1 )
+            return;
+
+        win.addEvents({
+            /**
+             * @event documentkeypress
+             * Fires when a keypress on the document occurs and the window is active
+             * @param {Ext.Window} this
+             * @param {Object} event
+             */
+            documentkeypress: true
+        });
+        
+        log('registered new window');
+        this.wins.push( win );
+        win.on( 'close', this.windowClose, this );
+        win.on( 'activate', this.windowActivate, this );
+        win.on( 'deactivate', this.windowDeactivate, this );
+    },
+
+    windowActivate: function( win ) {
+        log('activate win');
+        this.active = true;
+        this.activeWin = win;
+    },
+
+    windowDeactivate: function( win ) {
+        log('deactivate win');
+        this.active = false;
+        this.activeWin = null;
+    },
+
+    windowClose: function( win ) {
+        log('window closed');
+        this.unregister( win );
+    },
+
+    unregister: function( win ) {
+        if ( this.activeWin === win ) {
+            this.active = false;
+            this.activeWin = null;
+        }
+        this.wins.remove( win );
+    }
 
 });
 
@@ -870,31 +976,58 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
 
 /* -------------------------------------------------------------------------*/
 
+new CometDesktop.App({
 
-CometDesktop.SampleApp = Ext.extend(CometDesktop.Module, {
+    getStartConfig: function() {
+        return {
+            title: 'Guest',
+            iconCls: 'user',
+            toolItems: [{
+                text: 'Settings',
+                iconCls: 'settings',
+                scope: this
+            },'-', {
+                text: 'Logout',
+                iconCls: 'logout',
+                handler: function() { window.location = '../logout'; },
+                scope: this
+            }]
+        };
+    }
 
-    id: 'sampleapp',
+});
+
+/* -------------------------------------------------------------------------*/
+
+
+CometDesktop.SampleApp = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.launcher = {
+            id: this.appId,
+            channel: this.appChannel,
             text: 'Sample App',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-            autoStart: true,
-            handler: this.createWindow,
-            scope: this
+            autoStart: true
         };
+        this.subscribe( this.appChannel, this.eventReceived, this );
+        this.publish( '/desktop/app/register', this.launcher );
+    },
+
+    eventReceived: function() {
+        this.createWindow();
     },
 
     createWindow: function() {
-        var win = this.app.desktop.getWindow('sampleapp-win');
+        var win = app.getWindow('sampleapp-win');
         if ( !win )
             win = this.create();
         win.show();
     },
 
     create: function() {
-        return this.app.desktop.createWindow({
+        return app.createWindow({
             id: 'sampleapp-win',
             title: 'Sample App',
             width: 300,
@@ -914,19 +1047,25 @@ CometDesktop.SampleApp = Ext.extend(CometDesktop.Module, {
 
 });
 
-CometDesktop.SampleApp2 = Ext.extend(CometDesktop.Module, {
+new CometDesktop.SampleApp();
 
-    id: 'sampleapp2',
+CometDesktop.SampleApp2 = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.launcher = {
+            id: this.appId,
+            channel: this.appChannel,
             text: 'Sample App 2',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-            autoStart: true,
-            handler: this.createWindow,
-            scope: this
+            autoStart: true
         };
+        this.subscribe( this.appChannel, this.eventReceived, this );
+        this.publish( '/desktop/app/register', this.launcher );
+    },
+
+    eventReceived: function() {
+        this.createWindow();
     },
 
     createWindow: function() {
@@ -934,7 +1073,7 @@ CometDesktop.SampleApp2 = Ext.extend(CometDesktop.Module, {
     },
 
     create: function() {
-        return this.app.desktop.createWindow({
+        return app.createWindow({
             // don't include a window id if you plan on allowing multiple instances
             title: 'Sample App 2',
             width: 300,
@@ -953,4 +1092,6 @@ CometDesktop.SampleApp2 = Ext.extend(CometDesktop.Module, {
     }
 
 });
+    
+new CometDesktop.SampleApp2();
 
