@@ -59,6 +59,9 @@
 
 <body scroll="no">
 <div id="loading-mask"></div>
+<div id="locked-status" style="display:none">
+    <div class="locked-indicator"> Screen Locked</div>
+</div>
 <div id="loading">
     <div class="loading-indicator"> Loading....</div>
 </div>

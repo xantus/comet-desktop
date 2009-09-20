@@ -659,88 +659,23 @@ td.ux-taskButtons-edge {
     filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='images/im48x48.png', sizingMethod='scale');
 }
 
-select{
-	font-size:11px;
+#locked-status {
+    position: absolute;
+    left: 44%;
+    top: 40%;
+    padding: 2px;
+    z-index: 20001;
+    height: auto;
 }
-.image-tip{
-	padding:4px;
-	height:98px;
-	white-space:nowrap;
-}
-.image-tip img {
-	margin-right:10px;
-	border:2px solid #083772;
-}
-.image-tip b{
-	color: #083772;
-	display: block;
-	margin-bottom: 4px;
-}
-.image-tip span{
-	display: block;
-	margin-bottom: 5px;
-	margin-left: 5px;
-}
-#images{
-	background: #fff url( ../images/center-bg.gif ) repeat-x top left;
-	font: 11px Arial, Helvetica, sans-serif;
-}
-#images .thumb{
-	background: #dddddd;
-	padding:3px;
-}
-#images .thumb img{
-	border:1px solid white;
-	height: 133px;
-	width: 100px;
-}
-#images .thumb-wrap{
-	float: left;
-	margin: 4px;
-	margin-right: 0;
-	padding: 5px;
-}
-#images .thumb-wrap span{
-	display: block;
-	overflow: hidden;
-	text-align: center;
-}
-#images .x-view-selected .thumb{
-	background:#8db2e3;
-}
-#images .loading-indicator {
-	font-size:8pt;
-	background-image:url(../lib/ext-3.0.0/resources/images/default/grid/loading.gif);
-	background-repeat: no-repeat;
-	background-position: left;
-	padding-left:20px;
-	margin:10px;
-}
-.x-dd-drag-proxy .multi-proxy .thumb-img{
-	height: 20px;
-	width: 30px;
-	margin:1px;
-}
-.x-dd-drag-proxy .thumb-img{
-	height: 133px;
-	width: 100px;
-}
-.image-node .x-tree-node-icon{
-    margin-bottom:1px;
-    height:15px;
-}
-.album-node .x-tree-node-icon, .album-btn{
-    background-image:url( ../images/album.gif ) !important;
-}
-#folders{
-	position:relative;
-}
-
-/* system icons */
-
-/* TODO better icons */
-/* available, away, busy, invisible, offline */
-
-.user-status-available-icon {
-    background-image: url(../images/member.gif) !important;
+#locked-status .locked-indicator {
+    background: #000;
+    background-image: url(../images/large-icons/lock.png);
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    color: #fff;
+    font: bold 14px tahoma,arial,helvetica;
+    padding: 40px;
+    margin: 0;
+    text-align: center;
+    height: auto;
 }

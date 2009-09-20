@@ -37,6 +37,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         this.subscribe( '*', this.logEvents, this );
         this.subscribe( '/desktop/app/register', this.eventRegisterApp, this );
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
+        this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
 
         this.minimizeAll = true;
 
@@ -115,6 +116,16 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         // hack
         if ( ev.autoStart )
             this.publish( ev.channel, { action: 'launch' } );
+    },
+
+    eventLockDesktop: function() {
+        // TODO, unlock, etc
+        Ext.fly( 'loading-mask' ).fadeIn({
+            duration: 1.5,
+            callback: function() { 
+                Ext.fly( 'locked-status' ).fadeIn({ duration: 1 });
+            }
+        });
     },
 
     eventShowDesktop: function() {
@@ -385,8 +396,8 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
         var checkHandler = function( item, checked ) {
             if ( checked ) {
                 Ext.getCmp( 'system-user-menu' ).setIconClass( item.iconCls );
-                var channel = item.iconCls.replace( 'cd-icon', '/desktop' ).replace( '-', '/', 'g' );
-                this.publish( channel, { action: 'launch' } );
+                var status = item.iconCls.match( /status-(.*)/ )[ 1 ];
+                this.publish( '/desktop/user/status', { action: 'status', status: status } );
             }
         };
 
@@ -450,12 +461,12 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             menu: dateMenu
         });
 
-        var dr = Ext.util.Format.dateRenderer('D M j, H:i');
+        var dr = Ext.util.Format.dateRenderer( 'D M j, H:i' );
         var setDate = function() {
             var dt = new Date;
             dateControl.setText( dr( dt ) );
             // defer until after the nearest minute
-            setDate.defer( ( 61 - dt.format('s') ) * 1000 );
+            setDate.defer( ( 61 - dt.format( 's' ) ) * 1000 );
         };
 
         setDate();
@@ -575,7 +586,7 @@ CometDesktop.App = Ext.extend( CometDesktop.Desktop, {
         this.launcher = Ext.getCmp( 'appsMenu' );
 
         Ext.fly( 'loading' ).remove();
-        Ext.fly( 'loading-mask' ).fadeOut( { remove: true, duration: 1.5 } );
+        Ext.fly( 'loading-mask' ).fadeOut( { duration: 1.5 } );
 
         this.startup();
 
@@ -725,8 +736,10 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
 
     constructor: function( config ) {
         Ext.apply( this, config );
-        this.appId = Ext.id( undefined, 'app-' );
-        this.appChannel = '/desktop/app/' + this.appId;
+        if ( !this.appId )
+            this.appId = Ext.id( undefined, 'app-' );
+        if ( !this.appChannel )
+            this.appChannel = '/desktop/app/' + this.appId;
         this.init();
     },
 
@@ -993,8 +1006,9 @@ new CometDesktop.App();
 
 /* -------------------------------------------------------------------------*/
 
+Ext.namespace( 'Apps' );
 
-CometDesktop.SampleApp = Ext.extend( CometDesktop.Module, {
+Apps.SampleApp = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
@@ -1029,7 +1043,6 @@ CometDesktop.SampleApp = Ext.extend( CometDesktop.Module, {
             iconCls: 'icon-grid',
             shim: false,
             animCollapse: false,
-            constrainHeader: true,
             layout: 'fit',
             items: [
                 {
@@ -1041,9 +1054,9 @@ CometDesktop.SampleApp = Ext.extend( CometDesktop.Module, {
 
 });
 
-new CometDesktop.SampleApp();
+new Apps.SampleApp();
 
-CometDesktop.SampleApp2 = Ext.extend( CometDesktop.Module, {
+Apps.SampleApp2 = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
@@ -1074,7 +1087,6 @@ CometDesktop.SampleApp2 = Ext.extend( CometDesktop.Module, {
             iconCls: 'icon-grid',
             shim: false,
             animCollapse: false,
-            constrainHeader: true,
             layout: 'fit',
             items: [
                 {
@@ -1086,5 +1098,52 @@ CometDesktop.SampleApp2 = Ext.extend( CometDesktop.Module, {
 
 });
     
-new CometDesktop.SampleApp2();
+new Apps.SampleApp2();
+
+/* -------------------------------------------------------------------------*/
+
+CometDesktop.AboutApp = Ext.extend( CometDesktop.Module, {
+    
+    appChannel: '/desktop/system/about',
+
+    init: function() {
+        this.subscribe( this.appChannel, this.eventReceived, this );
+    },
+
+    eventReceived: function() {
+        this.createWindow();
+    },
+
+    createWindow: function() {
+        var win = app.getWindow( 'about-desktop-win' );
+        if ( !win )
+            win = this.create();
+        win.show();
+    },
+
+    create: function() {
+        return app.createWindow({
+            id: 'about-desktop-win',
+            title: 'About Comet Desktop',
+            iconCls: 'cd-icon-system-about',
+            x: 100,
+            y: 100,
+            width: 300,
+            height: 250,
+            layout: 'fit',
+            maximizable: false,
+            preventBodyReset: true,
+            items: [
+                {
+                    html: ['<div style="padding:10px 10px 10px 10px;"><h2>Comet Desktop</h2><h3>Ext web desktop</h3>',
+                    '<h3>Authors</h3><ul><li>David Davis - <a href="http://xant.us/" target="_blank">http://xant.us/</a></li>',
+                    '<li>Jonathan Leppert</li></ul></div>'].join('')
+                }
+            ]
+        });
+    }
+
+});
+
+new CometDesktop.AboutApp();
 
