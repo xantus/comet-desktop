@@ -18,28 +18,28 @@
  * http://www.extjs.com/license
  */
 
-Ext.namespace('CometDesktop');
+Ext.namespace( 'CometDesktop' );
 
 Ext.BLANK_IMAGE_URL = 'lib/ext-3.0.0/resources/images/default/s.gif';
 
-window.app = {
-    register: Ext.emptyFn
-};
-
-
-CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
+CometDesktop.App = Ext.extend( Ext.util.Observable, {
+    
+    isReady: false,
+    modules: [],
+    minimizeAll: true,
+    timing: [ 'extend', new Date() ],
 
     constructor: function( config ) {
-        Ext.apply( this, config );
-
         window.app = this;
+        Ext.apply( this, config );
+        
+        this.time( 'startup' ); // timing stats
 
         this.subscribe( '*', this.logEvents, this );
         this.subscribe( '/desktop/app/register', this.eventRegisterApp, this );
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
         this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
-
-        this.minimizeAll = true;
+        this.subscribe( '/desktop/logout', this.eventLogout, this );
 
         this.taskbar = new Ext.ux.TaskBar( this );
         this.viewport = new Ext.Viewport({
@@ -95,6 +95,29 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
                 }
             }, this);
         }
+        
+        // TBD set up this.gaTracker using the account number from the config
+
+        this.addEvents(
+            'ready',
+            'beforeunload'
+        );
+
+        Ext.onReady( this.initApp, this );
+    },
+    
+    initApp: function() {
+		Ext.QuickTips.init();
+
+        this.launcher = Ext.getCmp( 'appsMenu' );
+
+        Ext.fly( 'loading' ).remove();
+        Ext.fly( 'loading-mask' ).fadeOut( { duration: 1.5 } );
+
+        Ext.EventManager.on( window, 'beforeunload', this.onUnload, this );
+		this.fireEvent( 'ready', this );
+        this.isReady = true;
+        this.time( 'ready' );
     },
 
     logEvents: function( ev, ch ) {
@@ -116,6 +139,10 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         // hack
         if ( ev.autoStart )
             this.publish( ev.channel, { action: 'launch' } );
+    },
+
+    eventLogout: function() {
+        window.location = '../logout';
     },
 
     eventLockDesktop: function() {
@@ -141,6 +168,49 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         }, this);
         // XXX this allows it to toggle
         //this.minimizeAll = this.minimizeAll === false;
+    },
+    
+    time: function( name ) {
+        this.timing.push( [ name, new Date() ] );
+    },
+
+    getModule: function( name ) {
+    	var ms = this.modules;
+    	for ( var i = 0, len = ms.length; i < len; i++ )
+    		if ( ms[ i ].id == name || ms[ i ].appType == name )
+    			return ms[ i ];
+        return '';
+    },
+
+    onReady: function( fn, scope ) {
+        if ( !this.isReady )
+            this.on( 'ready', fn, scope );
+        else
+            fn.call( scope, this );
+    },
+
+    onUnload: function(e) {
+        if ( this.fireEvent( 'beforeunload', this ) === false )
+            e.stopEvent();
+    },
+
+    gaSetVar: function( v ) {
+        if ( !this.gaTracker )
+            return;
+        return this.gaTracker._setVar( v );
+    },
+
+    gaPageview: function( id ) {
+        if ( !this.gaTracker )
+            return;
+        log('ga pageview: ' + id);
+        return this.gaTracker._trackPageview( id );
+    },
+
+    sha1_hex: function( data ) {
+        if ( !this.sha1 )
+            this.sha1 = new CometDesktop.SHA1();
+        return this.sha1.hex( data );
     },
 
     minimizeWin: function( win ) {
@@ -258,21 +328,21 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
     },
 
     getWinWidth: function() {
-		var width = Ext.lib.Dom.getViewWidth();
+		var width = this.center.el.getWidth();
 		return width < 200 ? 200 : width;
 	},
 
 	getWinHeight: function() {
-		var height = ( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() );
+		var height = this.center.el.getHeight();
 		return height < 100 ? 100 : height;
 	},
 
 	getWinX: function( width ) {
-		return ( Ext.lib.Dom.getViewWidth() - width ) / 2
+		return ( this.center.el.getWidth() - width ) / 2;
 	},
 
 	getWinY: function( height ) {
-		return ( Ext.lib.Dom.getViewHeight() - this.taskbarEl.getHeight() - height ) / 2;
+		return ( this.center.el.getHeight() - height ) / 2;
 	}
 
 });
@@ -444,8 +514,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, '-', {
                     text: 'Log Out&hellip;',
                     iconCls: 'cd-icon-user-logout',
-//                    channel: '/desktop/logout'
-                    handler: function() { window.location = '../logout'; }
+                    channel: '/desktop/logout'
                 }
             ]
         });
@@ -519,7 +588,6 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
     },
 
     _onRender: function() {
-            
         this.dropTarget = new Ext.dd.DropTarget( this.el, {
             ddGroup: 'toolbar-group',
             copy: false,
@@ -537,11 +605,11 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             items: [{
                 text: 'Add to Panel&hellip;',
                 iconCls: 'cd-icon-toolbar-add',
-                channel: '/desktop/toolbar/add/' + this.id
+                channel: '/desktop/toolbar/' + this.id + '/add'
             },{
                 text: 'Properties',
                 iconCls: 'cd-icon-toolbar-properties',
-                channel: '/desktop/toolbar/properties/' + this.id
+                channel: '/desktop/toolbar/' + this.id + '/properties'
             }]
         });
 
@@ -552,106 +620,6 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             
             this.menu.showAt( e.getXY() );
         }, this );
-
-    }
-
-});
-
-/* -------------------------------------------------------------------------*/
-
-// TODO combine into CometDesktop.Desktop
-CometDesktop.App = Ext.extend( CometDesktop.Desktop, {
-
-    isReady: false,
-    modules: [],
-
-    constructor: function() {
-        CometDesktop.App.superclass.constructor.apply( this, arguments );
-
-        // TBD set up this.gaTracker using the account number from the config
-
-        this.addEvents(
-            'ready',
-            'beforeunload'
-        );
-
-        this.timing = [ 'start', new Date() ];
-        Ext.onReady( this.initApp, this );
-    },
-
-    initApp: function() {
-        this.time( 'start' );
-		Ext.QuickTips.init();
-
-        this.launcher = Ext.getCmp( 'appsMenu' );
-
-        Ext.fly( 'loading' ).remove();
-        Ext.fly( 'loading-mask' ).fadeOut( { duration: 1.5 } );
-
-        this.startup();
-
-        Ext.EventManager.on( window, 'beforeunload', this.onUnload, this );
-		this.fireEvent( 'ready', this );
-        this.isReady = true;
-    },
-
-    time: function( name ) {
-        this.timing.push( [ name, new Date() ] );
-    },
-
-    startup: Ext.emptyFn,
-
-    initModules: function( ms ) {
-		for ( var i = 0, len = ms.length; i < len; i++ ) {
-            var m = ms[ i ];
-            // insert apps before the - and add/remove menu items
-            this.launcher.insert( this.launcher.items.length - 2, m.launcher );
-            m.app = this;
-            if ( m.launcher.autoStart )
-                if ( m.launcher.scope )
-                    m.launcher.handler.call( m.launcher.scope );
-                else
-                    m.launcher.handler();
-        }
-    },
-
-    getModule: function( name ) {
-    	var ms = this.modules;
-    	for ( var i = 0, len = ms.length; i < len; i++ )
-    		if ( ms[ i ].id == name || ms[ i ].appType == name )
-    			return ms[ i ];
-        return '';
-    },
-
-    onReady: function( fn, scope ) {
-        if ( !this.isReady )
-            this.on( 'ready', fn, scope );
-        else
-            fn.call( scope, this );
-    },
-
-    onUnload: function(e) {
-        if ( this.fireEvent( 'beforeunload', this ) === false )
-            e.stopEvent();
-    },
-
-    gaSetVar: function( v ) {
-        if ( !this.gaTracker )
-            return;
-        return this.gaTracker._setVar( v );
-    },
-
-    gaPageview: function( id ) {
-        if ( !this.gaTracker )
-            return;
-        log('ga pageview: ' + id);
-        return this.gaTracker._trackPageview( id );
-    },
-
-    sha1_hex: function( data ) {
-        if ( !this.sha1 )
-            this.sha1 = new CometDesktop.SHA1();
-        return this.sha1.hex( data );
     }
 
 });
@@ -736,10 +704,12 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
 
     constructor: function( config ) {
         Ext.apply( this, config );
+
         if ( !this.appId )
             this.appId = Ext.id( undefined, 'app-' );
         if ( !this.appChannel )
             this.appChannel = '/desktop/app/' + this.appId;
+        
         this.init();
     },
 
@@ -979,7 +949,8 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
         }
 
         return utftext;
-    },
+    }
+
 });
 
 /* -------------------------------------------------------------------------*/
@@ -1001,6 +972,7 @@ Ext.override( Ext.menu.BaseItem, {
 });
 
 /* -------------------------------------------------------------------------*/
+/* Start the main desktop app */
 
 new CometDesktop.App();
 
