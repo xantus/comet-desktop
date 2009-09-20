@@ -111,3 +111,11 @@
     background-image: url(../images/icons/desktop.png) !important;
 }
 
+.cd-icon-toolbar-add {
+    background-image: url(../images/icons/add.png) !important;
+}
+
+.cd-icon-toolbar-properties {
+    background-image: url(../images/icons/config.png) !important;
+}
+

@@ -44,7 +44,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
-                this.toolPanel = new CometDesktop.ToolPanel({ region: 'north' }),
+                this.toolPanel = new CometDesktop.ToolPanel({ id: 'top-toolbar', region: 'north' }),
                 this.center = new Ext.BoxComponent({
                     region: 'center',
                     height: '100%',
@@ -108,21 +108,13 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
         log('app registered:'+ev.channel);
 
         // insert apps before the - and add/remove menu items
-        this.launcher.insert(
-            this.launcher.items.length - 2,
-            Ext.apply( ev, {
-                handler: this.launchHandler.createDelegate( this, [ ev.channel ] )
-            } )
-        );
+        this.launcher.insert( this.launcher.items.length - 2, ev );
+
+        this.modules.push( ev );
 
         // hack
         if ( ev.autoStart )
-            this.launchHandler( ev.channel );
-    },
-
-    launchHandler: function( channel ) {
-        log('launch app:'+channel);
-        this.publish( channel, { action: 'launch' } );
+            this.publish( ev.channel, { action: 'launch' } );
     },
 
     eventShowDesktop: function() {
@@ -279,6 +271,7 @@ CometDesktop.Desktop = Ext.extend( Ext.util.Observable, {
 CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
     constructor: function( config ) {
+        //this.id = Ext.id( undefined, 'toolbar-' );
         var appsMenu = new Ext.menu.Menu({
             id: 'appsMenu',
             style: {
@@ -288,7 +281,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 '-', {
                     text: 'Add/Remove&hellip;',
                     iconCls: 'cd-icon-apps-system-addremove',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/apps/add-remove'
                 }
             ]
         });
@@ -302,15 +295,15 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 {
                     text: 'Home Folder',
                     iconCls: 'cd-icon-place-home',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/places/home'
                 }, {
                     text: 'Desktop',
                     iconCls: 'cd-icon-place-desktop',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/places/desktop'
                 }, '-', {
                     text: 'Computer',
                     iconCls: 'cd-icon-place-computer',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/places/computer'
                 }
             ]
         });
@@ -329,23 +322,23 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                             {
                                 text: 'About Me',
                                 iconCls: 'cd-icon-system-prefs-about',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/prefs/about'
                             }, {
                                 text: 'Appearance',
                                 iconCls: 'cd-icon-system-prefs-appearance',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/prefs/appearance'
                             }, {
                                 text: 'Main Menu',
                                 iconCls: 'cd-icon-system-prefs-mainmenu',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/prefs/mainmenu'
                             }, {
                                 text: 'Sound',
                                 iconCls: 'cd-icon-system-prefs-sound',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/prefs/sound'
                             }, {
                                 text: 'Windows',
                                 iconCls: 'cd-icon-system-prefs-windows',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/prefs/windows'
                             }
                         ]
                     }
@@ -357,41 +350,44 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                             {
                                 text: 'Language Support',
                                 iconCls: 'cd-icon-system-admin-locale',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/admin/locale'
                             }, {
                                 text: 'Login Window',
                                 iconCls: 'cd-icon-system-admin-login',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/admin/login'
                             }, {
                                 text: 'System Monitor',
                                 iconCls: 'cd-icon-system-admin-system',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/admin/system'
                             }, {
                                 text: 'Time and Date',
                                 iconCls: 'cd-icon-system-admin-datetime',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/admin/datetime'
                             }, {
                                 text: 'Users and Groups',
                                 iconCls: 'cd-icon-system-admin-users',
-                                handler: Ext.emptyFn
+                                channel: '/desktop/system/admin/users'
                             }
                         ]
                     }
                 }, '-', {
                     text: 'Help and Support',
                     iconCls: 'cd-icon-system-help',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/system/help'
                 }, {
                     text: 'About Comet Desktop',
                     iconCls: 'cd-icon-system-about',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/system/about'
                 }
             ]
         });
 
         var checkHandler = function( item, checked ) {
-            if ( checked )
+            if ( checked ) {
                 Ext.getCmp( 'system-user-menu' ).setIconClass( item.iconCls );
+                var channel = item.iconCls.replace( 'cd-icon', '/desktop' ).replace( '-', '/', 'g' );
+                this.publish( channel, { action: 'launch' } );
+            }
         };
 
         var userMenu = new Ext.menu.Menu({
@@ -433,10 +429,11 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, '-', {
                     text: 'Lock screen',
                     iconCls: 'cd-icon-user-lock',
-                    handler: Ext.emptyFn
+                    channel: '/desktop/lock'
                 }, '-', {
                     text: 'Log Out&hellip;',
                     iconCls: 'cd-icon-user-logout',
+//                    channel: '/desktop/logout'
                     handler: function() { window.location = '../logout'; }
                 }
             ]
@@ -477,22 +474,24 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, ' ', ' ',
                 {
                     text: 'Places',
-//                    menu: placesMenu
+                    menu: placesMenu
+/*
                     menu: new Ext.ux.menu.StoreMenu({ data: [
                         {
                             text: 'Home Folder',
                             iconCls: 'cd-icon-place-home',
-                            channel: '/places/home'
+                            channel: '/desktop/places/home'
                         }, {
                             text: 'Desktop',
                             iconCls: 'cd-icon-place-desktop',
-                            channel: '/places/desktop'
+                            channel: '/desktop/places/desktop'
                         }, '-', {
                             text: 'Computer',
                             iconCls: 'cd-icon-place-computer',
-                            channel: '/places/computer'
+                            channel: '/desktop/places/computer'
                         }
                     ] })
+*/
                 }, ' ', ' ', {
                     text: 'System',
                     menu: systemMenu
@@ -526,10 +525,12 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
         this.menu = new Ext.menu.Menu({
             items: [{
                 text: 'Add to Panel&hellip;',
-                handler: Ext.emptyFn
+                iconCls: 'cd-icon-toolbar-add',
+                channel: '/desktop/toolbar/add/' + this.id
             },{
                 text: 'Properties',
-                handler: Ext.emptyFn
+                iconCls: 'cd-icon-toolbar-properties',
+                channel: '/desktop/toolbar/properties/' + this.id
             }]
         });
 
@@ -551,18 +552,17 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 CometDesktop.App = Ext.extend( CometDesktop.Desktop, {
 
     isReady: false,
-    startMenu: null,
-    modules: null,
+    modules: [],
 
     constructor: function() {
         CometDesktop.App.superclass.constructor.apply( this, arguments );
 
         // TBD set up this.gaTracker using the account number from the config
 
-        this.addEvents({
-            'ready': true,
-            'beforeunload': true
-        });
+        this.addEvents(
+            'ready',
+            'beforeunload'
+        );
 
         this.timing = [ 'start', new Date() ];
         Ext.onReady( this.initApp, this );
@@ -712,13 +712,8 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
 
         for ( var i = 0, len = records.length; i < len; i++ ) {
             if ( records[ i ].json.menu )
-                records[ i ].json.menu = eval( records[ i ].json.menu );
-
-            this.add(
-                Ext.apply( records[ i ].json, {
-                    handler: app.launchHandler.createDelegate( app, [ records[ i ].json.channel ] )
-                } )
-            );
+                records[ i ].json.menu = new Ext.menu.Menu( records[ i ].json.menu );
+            this.add( records[ i ].json );
         }
     }
 
@@ -776,15 +771,15 @@ CometDesktop.KeyManager = Ext.extend( Ext.util.Observable, {
         if ( Ext.indexOf( win ) == -1 )
             return;
 
-        win.addEvents({
+        win.addEvents(
             /**
              * @event documentkeypress
              * Fires when a keypress on the document occurs and the window is active
              * @param {Ext.Window} this
              * @param {Object} event
              */
-            documentkeypress: true
-        });
+            'documentkeypress'
+        );
         
         log('registered new window');
         this.wins.push( win );
@@ -976,26 +971,25 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
 
 /* -------------------------------------------------------------------------*/
 
-new CometDesktop.App({
+Ext.override( Ext.menu.BaseItem, {
 
-    getStartConfig: function() {
-        return {
-            title: 'Guest',
-            iconCls: 'user',
-            toolItems: [{
-                text: 'Settings',
-                iconCls: 'settings',
-                scope: this
-            },'-', {
-                text: 'Logout',
-                iconCls: 'logout',
-                handler: function() { window.location = '../logout'; },
-                scope: this
-            }]
-        };
+    constructor: function( config ) {
+        Ext.menu.BaseItem.superclass.constructor.call( this, config );
+
+        if ( this.channel && !this.handler ) {
+            log('registered menu channel '+this.channel);
+            this.on( 'click', function() { this.publish( this.channel, { action: 'launch' } ); }, this );
+        }
+
+        if ( this.handler )
+            this.on( 'click', this.handler, this.scope || this );
     }
 
 });
+
+/* -------------------------------------------------------------------------*/
+
+new CometDesktop.App();
 
 /* -------------------------------------------------------------------------*/
 
@@ -1003,16 +997,16 @@ new CometDesktop.App({
 CometDesktop.SampleApp = Ext.extend( CometDesktop.Module, {
 
     init: function() {
-        this.launcher = {
+        this.subscribe( this.appChannel, this.eventReceived, this );
+        this.publish( '/desktop/app/register', {
+            self: this,
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
             autoStart: true
-        };
-        this.subscribe( this.appChannel, this.eventReceived, this );
-        this.publish( '/desktop/app/register', this.launcher );
+        });
     },
 
     eventReceived: function() {
@@ -1052,16 +1046,15 @@ new CometDesktop.SampleApp();
 CometDesktop.SampleApp2 = Ext.extend( CometDesktop.Module, {
 
     init: function() {
-        this.launcher = {
+        this.subscribe( this.appChannel, this.eventReceived, this );
+        this.publish( '/desktop/app/register', {
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App 2',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
             autoStart: true
-        };
-        this.subscribe( this.appChannel, this.eventReceived, this );
-        this.publish( '/desktop/app/register', this.launcher );
+        });
     },
 
     eventReceived: function() {
