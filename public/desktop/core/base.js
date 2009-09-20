@@ -27,7 +27,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     isReady: false,
     modules: [],
     minimizeAll: true,
-    timing: [ 'extend', new Date() ],
+    timing: [ [ 'extend', new Date() ] ],
 
     constructor: function( config ) {
         window.app = this;
