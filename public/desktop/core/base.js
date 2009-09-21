@@ -49,12 +49,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             layout: 'border',
             items:[
                 this.toolPanel = new CometDesktop.ToolPanel({ id: 'top-toolbar', region: 'north' }),
-                this.center = new Ext.BoxComponent({
-                    region: 'center',
-                    height: '100%',
-                    width: '100%'
-                }), /*
-                {
+                this.center = new CometDesktop.Desktop(),
+                /* {
                     region: 'east',
                     width: 200,
                     title: 'East',
@@ -221,6 +217,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                 manager: this.windowManager,
                 //constrain: true,
                 constrainHeader: true,
+                animCollapse: true,
                 minimizable: true,
                 maximizable: true
             })
@@ -301,14 +298,13 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             repos = true;
         }
         // shift the window and save the position when it is done
-        if ( repos ) {
+        if ( repos )
             this.el.shift({
                 x: d.x,
                 y: d.y,
                 duration: .25,
                 callback: this.setPagePosition.createDelegate( this, [ d.x, d.y ] )
             });
-        }
 
         // fix an IE6 display bug
         if ( Ext.isIE6 )
@@ -319,6 +315,16 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         this.header.on( 'click', this.taskButton.contextMenu, this.taskButton );
         this.header.on( 'contextmenu', this.taskButton.contextMenu, this.taskButton );
+
+        // TBD: option to enable/disable this
+        // remove this behavior, and enable double click to expand/collapse
+        this.header.un( 'dblclick', this.toggleMaximize, this );
+        this.header.on( 'dblclick', function() {
+            if ( this.collapsed )
+                this.expand();
+            else
+                this.collapse();
+        }, this );
     },
 
     /* TBD nuke these? */
@@ -613,6 +619,51 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 text: 'Properties',
                 iconCls: 'cd-icon-toolbar-properties',
                 channel: '/desktop/toolbar/' + this.id + '/properties'
+            }]
+        });
+
+        this.el.on( 'contextmenu', function( e ) {
+            e.stopEvent();
+            if ( !this.menu.el )
+                this.menu.render();
+
+            var xy = e.getXY();
+
+            // open the menu upwards if it will fall below the viewable area
+            var mHeight = this.menu.el.getHeight();
+            if ( mHeight + xy[ 1 ] > Ext.lib.Dom.getViewHeight() )
+                xy[ 0 ] -= mHeight;
+
+            // open the menu to the left if it will fall outside the viewable area
+            var mWidth = this.menu.el.getWidth();
+            if ( mWidth + xy[ 0 ] > Ext.lib.Dom.getViewWidth() )
+                xy[ 0 ] -= mWidth;
+
+            this.menu.showAt( xy );
+        }, this );
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+CometDesktop.Desktop = Ext.extend( Ext.BoxComponent, {
+
+    constructor: function( config ) {
+        CometDesktop.Desktop.superclass.constructor.call( this, Ext.applyIf( config || {}, {
+            region: 'center',
+            height: '100%',
+            width: '100%'
+        }) );
+        this.on( 'render', this._onRender, this );
+    },
+
+    _onRender: function() {
+        this.menu = new Ext.menu.Menu({
+            items: [{
+                text: 'Change Desktop Background',
+                iconCls: 'cd-icon-system-prefs-appearance-background',
+                channel: '/desktop/system/prefs/appearance/background'
             }]
         });
 
@@ -1004,9 +1055,9 @@ Apps.SampleApp = Ext.extend( CometDesktop.Module, {
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App',
-            iconCls: 'icon-grid',
+            iconCls: 'icon-grid'
             // hack: this is not how I want to auto start apps
-            autoStart: true
+//            autoStart: true
         });
     },
 
@@ -1051,9 +1102,9 @@ Apps.SampleApp2 = Ext.extend( CometDesktop.Module, {
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App 2',
-            iconCls: 'icon-grid',
+            iconCls: 'icon-grid'
             // hack: this is not how I want to auto start apps
-            autoStart: true
+//            autoStart: true
         });
     },
 
