@@ -363,7 +363,7 @@ Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
         this.win = win;
         Ext.ux.TaskBar.TaskButton.superclass.constructor.call(this, {
             iconCls: win.iconCls,
-            text: Ext.util.Format.ellipsis( win.title, 12 ),
+            text: Ext.util.Format.ellipsis( win.title, 20 ),
             renderTo: el,
             handler: function() {
                 if ( win.minimized || win.hidden )
@@ -425,37 +425,61 @@ Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
             log('before show');
         }, this);
 
-        this.el.on('contextmenu', function(e) {
-            e.stopEvent();
-            if ( !this.cmenu.el )
-                this.cmenu.render();
+        this.el.on( 'contextmenu', this.contextMenu, this );
+    },
 
-            var xy = e.getXY();
-            xy[1] -= this.cmenu.el.getHeight();
+    contextMenu: function( e, el ) {
+        e.stopEvent();
+        if ( !this.cmenu.el )
+            this.cmenu.render();
 
-            var items = this.cmenu.items.items;
-            var w = this.win;
-            // restore
-            items[0].setDisabled( w.maximized !== true && w.hidden !== true );
+        var items = this.cmenu.items.items;
+        var w = this.win;
+        // restore
+        items[0].setDisabled( w.maximized !== true && w.hidden !== true );
 
-            // minimize
-            items[1].setDisabled(w.minimized === true);
-			if ( Ext.isBoolean( w.minimizable ) && w.minimizable === false )
-            	items[1].setDisabled( true );
+        // minimize
+        items[1].setDisabled(w.minimized === true);
+        if ( Ext.isBoolean( w.minimizable ) && w.minimizable === false )
+            items[1].setDisabled( true );
 
-            // maximize
-            items[2].setDisabled( w.maximized === true || w.hidden === true );
-            if ( Ext.isBoolean( w.maximizable ) && w.maximizable === false )
-			    items[2].setDisabled( true );
-			
-            // close
-            if ( Ext.isBoolean( w.closable ) && w.closable !== true )
-                items[3].setDisabled( true );
-            else
-                items[3].setDisabled( false );
-            
-            this.cmenu.showAt( xy );
-        }, this);
+        // maximize
+        items[2].setDisabled( w.maximized === true || w.hidden === true );
+        if ( Ext.isBoolean( w.maximizable ) && w.maximizable === false )
+            items[2].setDisabled( true );
+        
+        // close
+        if ( Ext.isBoolean( w.closable ) && w.closable !== true )
+            items[3].setDisabled( true );
+        else
+            items[3].setDisabled( false );
+        
+        var xy = e.getXY();
+
+        var el = Ext.fly( el );
+        if ( el.hasClass( 'x-window-header' ) || el.hasClass( 'x-window-header-text' ) ) {
+            // left clicks on the header
+            if ( e.button == 0 ) {
+                var x = w.getPosition()[ 0 ];
+                // but only over the leftmost area above the icon
+                if ( xy[ 0 ] - x < 21 )
+                    xy = [ x + 3, w.header.getBottom() ];
+                else
+                    return;
+            }
+        }
+        
+        // open the menu upwards if it will fall below the viewable area
+        var mHeight = this.cmenu.el.getHeight();
+        if ( mHeight + xy[ 1 ] > Ext.lib.Dom.getViewHeight() )
+            xy[ 1 ] -= mHeight;
+
+        // open the menu to the left if it will fall outside the viewable area
+        var mWidth = this.cmenu.el.getWidth();
+        if ( mWidth + xy[ 0 ] > Ext.lib.Dom.getViewWidth() )
+            xy[ 0 ] -= mWidth;
+
+        this.cmenu.showAt( xy );
     },
     
     closeWin: function( cMenu, e, win ) {

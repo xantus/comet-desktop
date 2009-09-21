@@ -679,3 +679,6 @@ td.ux-taskButtons-edge {
     text-align: center;
     height: auto;
 }
+.x-panel-tl .x-panel-icon, .x-window-tl .x-panel-icon {
+    cursor: default;
+}

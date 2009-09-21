@@ -219,7 +219,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         var win = new ( cls || Ext.Window )(
             Ext.applyIf( config || {}, {
                 manager: this.windowManager,
-                constrain: true,
+                //constrain: true,
                 constrainHeader: true,
                 minimizable: true,
                 maximizable: true
@@ -231,7 +231,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         win.render( this.center.el );
         win.taskButton = this.taskbar.addTaskButton( win );
-        win.cmenu = new Ext.menu.Menu({ items: [] });
         win.animateTarget = win.taskButton.el;
 
         win.on({
@@ -317,6 +316,9 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         // remove the listener because we only want this effect on first show
         this.un( 'show', app.windowOnShow, this );
+
+        this.header.on( 'click', this.taskButton.contextMenu, this.taskButton );
+        this.header.on( 'contextmenu', this.taskButton.contextMenu, this.taskButton );
     },
 
     /* TBD nuke these? */
@@ -619,7 +621,19 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
             if ( !this.menu.el )
                 this.menu.render();
 
-            this.menu.showAt( e.getXY() );
+            var xy = e.getXY();
+
+            // open the menu upwards if it will fall below the viewable area
+            var mHeight = this.menu.el.getHeight();
+            if ( mHeight + xy[ 1 ] > Ext.lib.Dom.getViewHeight() )
+                xy[ 0 ] -= mHeight;
+
+            // open the menu to the left if it will fall outside the viewable area
+            var mWidth = this.menu.el.getWidth();
+            if ( mWidth + xy[ 0 ] > Ext.lib.Dom.getViewWidth() )
+                xy[ 0 ] -= mWidth;
+
+            this.menu.showAt( xy );
         }, this );
     }
 
