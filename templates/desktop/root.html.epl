@@ -72,6 +72,10 @@
     <div class="x-clear"></div>
 </div>
 
+<!-- ExtJS -->
+<script type="text/javascript" src="lib/ext-3.0.0/adapter/ext/ext-base.js"></script>
+<script type="text/javascript" src="lib/ext-3.0.0/ext-all.js"></script>
+
 <!-- JS -->
 <script type="text/javascript">
     if ( window.console ) {
@@ -84,10 +88,6 @@
         window.log = Ext.emptyFn;
     }
 </script>
-
-<!-- ExtJS -->
-<script type="text/javascript" src="lib/ext-3.0.0/adapter/ext/ext-base.js"></script>
-<script type="text/javascript" src="lib/ext-3.0.0/ext-all.js"></script>
 
 <!-- PubSub and Window Snapping -->
 <script type="text/javascript" src="lib/Sprocket/PubSub.js"></script>
