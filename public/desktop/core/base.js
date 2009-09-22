@@ -667,7 +667,10 @@ CometDesktop.Desktop = Ext.extend( Ext.BoxComponent, {
             }]
         });
 
-        this.el.on( 'contextmenu', function( e ) {
+        this.el.on( 'contextmenu', function( e, el ) {
+            // only handle the desktop
+            if ( el !== this.el.dom )
+                return;
             e.stopEvent();
             if ( !this.menu.el )
                 this.menu.render();
