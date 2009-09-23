@@ -116,10 +116,10 @@
 <script type="text/javascript" src="core/StartMenu.js"></script>
 <script type="text/javascript" src="core/TaskBar.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
-<script type="text/javascript">
-    /* Start the main desktop app */
-    new CometDesktop.App();
-</script>
+<script type="text/javascript" src="core/support.js"></script>
+
+<!-- Sample Apps, etc -->
+<script type="text/javascript" src="js/samples.js"></script>
 
 <% if ($ga_account) { %>
     <!-- GA -->
