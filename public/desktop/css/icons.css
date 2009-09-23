@@ -39,6 +39,10 @@
     background-image: url(../images/icons/looknfeel.png) !important;
 }
 
+.cd-icon-system-prefs-appearance-background {
+    background-image: url(../images/icons/background.png) !important;
+}
+
 .cd-icon-system-prefs-mainmenu {
     background-image: url(../images/icons/menuedit.png) !important;
 }
@@ -119,6 +123,6 @@
     background-image: url(../images/icons/config.png) !important;
 }
 
-.cd-icon-system-prefs-appearance-background {
-    background-image: url(../images/icons/background.png) !important;
+.cd-icon-window-close {
+    background-image: url(../images/icons/close.png) !important;
 }

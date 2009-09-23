@@ -1,0 +1,9 @@
+// Copyright (c) 2009 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+(function(h){if(!h.CFInstall){var j=function(a,b){return typeof a=="string"?(b||document).getElementById(a):a},e,f=function(){if(typeof e!="undefined")return e;e=false;var a=navigator.userAgent.toLowerCase();if(a.indexOf("chromeframe")>=0||a.indexOf("x-clock")>=0)return e=true;if(typeof window.ActiveXObject!="undefined")try{var b=new ActiveXObject("ChromeTab.ChromeFrame");if(b)e=true}catch(c){}return e},i=false,k=function(){if(!i)try{var a=".chromeFrameInstallDefaultStyle {width: 800px;height: 600px;position: absolute;left: 50%;top: 50%;margin-left: -400px;margin-top: -300px;}",
+b=document.createElement("style");b.setAttribute("type","text/css");if(b.styleSheet)b.styleSheet.cssText=a;else b.appendChild(document.createTextNode(a));var c=document.getElementsByTagName("head")[0],d=c.firstChild;c.insertBefore(b,d);i=true}catch(n){}},l=function(a,b){k();var c=j(b.node);a.id=b.id||(c?c.id||getUid(c):"");var d=b.cssText||"";a.style.cssText=" "+d;d=b.className||"";a.className="chromeFrameInstallDefaultStyle "+d;b=b.src||"about:blank";a.src=b;c&&c.parentNode.replaceChild(a,c)},m=
+function(a){var b=document.createElement("iframe");l(b,a);return b},g={};g.check=function(a){a=a||{};var b=/MSIE (\S+)/;if(b.test(navigator.userAgent)){b="//www.google.com/chromeframe";if(!f()){a.onmissing&&a.onmissing();a.src=a.url||b;b=a.mode||"inline";var c=a.preventPrompt||false;if(!c)if(b=="inline"){b=m(a);if(!b.parentNode){c=document.body.firstChild;document.body.insertBefore(b,c)}}else window.open(a.src);if(!a.preventInstallDetection)var d=setInterval(function(){if(f()){a.oninstall&&a.oninstall();
+clearInterval(d);window.location=a.destination||window.location}},2000)}}};g.isAvailable=f;h.CFInstall=g}})(this.ChromeFrameInstallScope||this);
+

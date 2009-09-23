@@ -415,6 +415,7 @@ Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
                 scope: this.win
             }, '-', {
                 text: 'Close',
+                iconCls: 'cd-icon-window-close',
                 handler: this.closeWin.createDelegate(this, this.win, true),
                 scope: this.win
             }]

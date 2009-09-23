@@ -1,8 +1,10 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 % my $c = shift;
 % my $ga_account = $c->google_analytics_acct;
 % my $v = $c->desktop_version;
 % my $title = $c->stash( 'title' ) ? ' - '.$c->stash( 'title' ) : '';
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+% my $chromeframe = $c->stash( 'disable_chromeframe' ) ? 0 : 1;
+% my $ext = $c->stash( 'ext_version' ) ? 'ext-'.$c->stash( 'ext_version' ) : 'ext-3.0.2';
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -12,6 +14,14 @@
 <meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+<% if ( $chromeframe ) { %>
+<!-- Google Chrome Frame for IE : http://code.google.com/chrome/chromeframe/ -->
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<!-- end -->
+<% } else { %>
+<!-- Google Chrome Frame is disabled -->
+<% } %>
 
 <style type="text/css">
 #loading-mask {
@@ -33,7 +43,7 @@
 }
 #loading .loading-indicator {
     background: #000;
-    background-image: url(lib/ext-3.0.0/resources/images/default/grid/loading.gif);
+    background-image: url(lib/<%= $ext %>/resources/images/default/grid/loading.gif);
     background-repeat: no-repeat;
     background-position: bottom center;
     color: #fff;
@@ -46,10 +56,7 @@
 </style>
 
 <!-- ExtJS CSS -->
-<link rel="stylesheet" type="text/css" href="lib/ext-3.0.0/resources/css/ext-all.css" />
-<!--
-<link rel="stylesheet" type="text/css" href="lib/ext-3.0.0/resources/css/slate/css/xtheme-slate.css" />
--->
+<link rel="stylesheet" type="text/css" href="lib/<%= $ext %>/resources/css/ext-all.css" />
 
 <!-- CSS -->
 <link rel="stylesheet" type="text/css" href="css/desktop.css" />
@@ -73,8 +80,8 @@
 </div>
 
 <!-- ExtJS -->
-<script type="text/javascript" src="lib/ext-3.0.0/adapter/ext/ext-base.js"></script>
-<script type="text/javascript" src="lib/ext-3.0.0/ext-all.js"></script>
+<script type="text/javascript" src="lib/<%= $ext %>/adapter/ext/ext-base.js"></script>
+<script type="text/javascript" src="lib/<%= $ext %>/ext-all.js"></script>
 
 <!-- JS -->
 <script type="text/javascript">
@@ -89,6 +96,18 @@
     }
 </script>
 
+<!-- Google Chrome Frame http://code.google.com/chrome/chromeframe/ -->
+<script type="text/javascript">
+<% if ( $chromeframe ) { %>
+    /* When Chrome Frame is on, it isn't IE so this doesn't load */
+    if ( Ext.isIE )
+        document.write(unescape("%3Cscript src='lib/chrome-frame/CFInstall.min.js' type='text/javascript'%3E%3C/script%3E"));
+<% } else { %>
+    if ( Ext.isIE || Ext.isChrome )
+        log('Google Chrome Frame is disabled');
+<% } %>
+</script>
+
 <!-- PubSub and Window Snapping -->
 <script type="text/javascript" src="lib/Sprocket/PubSub.js"></script>
 <script type="text/javascript" src="lib/window-edge-snap.js"></script>
@@ -97,6 +116,10 @@
 <script type="text/javascript" src="core/StartMenu.js"></script>
 <script type="text/javascript" src="core/TaskBar.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
+<script type="text/javascript">
+    /* Start the main desktop app */
+    new CometDesktop.App();
+</script>
 
 <% if ($ga_account) { %>
     <!-- GA -->
