@@ -12,7 +12,7 @@ CometDesktop.AboutApp = Ext.extend( CometDesktop.Module, {
     },
 
     createWindow: function() {
-        var win = app.getWindow( 'about-desktop-win' );
+        var win = app.getWindow( 'desktop-about-win' );
         if ( !win )
             win = this.create();
         win.show();
@@ -20,7 +20,7 @@ CometDesktop.AboutApp = Ext.extend( CometDesktop.Module, {
 
     create: function() {
         return app.createWindow({
-            id: 'about-desktop-win',
+            id: 'desktop-about-win',
             title: 'About Comet Desktop',
             iconCls: 'cd-icon-system-about',
             x: 100,

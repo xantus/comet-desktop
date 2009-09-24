@@ -31,6 +31,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     minimizeAll: true,
     activeWindow: null,
     timing: [ [ 'extend', new Date() ] ],
+    manifest: [
+        'core/support.js',
+        'js/samples.js'
+    ],
 
     constructor: function( config ) {
         window.app = this;
@@ -45,15 +49,16 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
-                this.toolPanel = new CometDesktop.ToolPanel({ id: 'top-toolbar', region: 'north' }),
+                this.toolPanel = new CometDesktop.ToolPanel({ id: 'top-toolbar', region: 'north', hidden: true }),
                 this.center = new CometDesktop.Desktop(),
-                {
+                this.taskPanel = new Ext.Panel({
                     region: 'south',
                     width: '100%',
                     height: 30,
                     border: false,
+                    hidden: true,
                     items: this.taskbar.container
-                }
+                })
             ]
         });
 
@@ -85,6 +90,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
         this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
         this.subscribe( '/desktop/logout', this.eventLogout, this );
+        this.subscribe( '/desktop/login', this.eventLogin, this );
 
         this.fireEvent( 'ready', this );
         this.isReady = true;
@@ -102,14 +108,47 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         log('app registered:'+ev.channel);
 
+        if ( ev.channel == '/desktop/system/login' ) {
+            if ( this.user )
+                return;
+
+            this.publish( ev.channel, { action: 'launch' } );
+            return;
+        }
+
         // insert apps before the - and add/remove menu items
         this.launcher.insert( this.launcher.items.length - 2, ev );
 
         this.modules.push( ev );
 
         // hack
-        if ( ev.autoStart )
-            this.publish( ev.channel, { action: 'launch' } );
+//        if ( ev.autoStart )
+//            this.publish( ev.channel, { action: 'launch' } );
+    },
+
+    eventLogin: function() {
+        this.toolPanel.show();
+        this.taskPanel.show();
+        this.viewport.doLayout();
+
+        new CometDesktop.FileFetcher({
+            files: this.manifest,
+            start: true,
+            success: function() {
+                var i = 0;
+                Ext.each( this.modules, function( m ) {
+                    if ( m.autoStart ) {
+                        i += 500;
+                        this.publish.defer( i, this, [ m.channel, { action: 'launch' } ] );
+                    }
+                }, this);
+            },
+            failure: function() {
+                // TBD better error handling
+                log('failed to load all files');
+            },
+            scope: this
+        });
     },
 
     eventLogout: function() {
@@ -272,13 +311,22 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             repos = true;
         }
         // shift the window and save the position when it is done
-        if ( repos )
+        if ( repos ) {
+            // don't fire deactivate
+            this.el.disableShadow();
             this.el.shift({
                 x: d.x,
                 y: d.y,
                 duration: .25,
-                callback: this.setPagePosition.createDelegate( this, [ d.x, d.y ] )
+                callback: function() {
+                    this.setPagePosition( d.x, d.y );
+                    // don't fire activate again
+                    if ( !this.maximized )
+                        this.el.enableShadow( true );
+                },
+                scope: this
             });
+        }
 
         // fix an IE6 display bug
         if ( Ext.isIE6 )
@@ -998,6 +1046,135 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
 
 /* -------------------------------------------------------------------------*/
 
+CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
+
+    extRegexp: /\.(\S+)$/,
+
+    constructor: function( config ) {
+        this.queue = [];
+        this.active = false;
+
+        if ( Ext.isArray( config ) )
+            this.load( { files: config } );
+
+        if ( Ext.isObject( config ) )
+            this.start( config );
+    },
+
+    load: function( data ) {
+        if ( Ext.isArray( data.files ) ) {
+            var files = data.files;
+            delete data.files;
+            for ( var i = 0, len = files.length; i < len; i++ )
+                this.queue.push( { file: files[ i ], type: this.getType( files[ i ] ), callback: data.callback, scope: data.scope } );
+        } else
+            this.queue.push( { file: data.file, type: this.getType( data.file ), callback: data.callback, scope: data.scope } );
+    },
+
+    getType: function( file ) {
+        return this.extRegexp( file )[ 1 ];
+    },
+
+    start: function( config ) {
+        var start = config.start ? true : false;
+        delete config.start;
+
+        Ext.apply( this, config );
+
+        if ( this.files )
+            this.load( { files: this.files } );
+
+        if ( start || !config )
+            this.checkQueue();
+    },
+
+    checkQueue: function() {
+        if ( this.active )
+            return;
+
+        this.active = true;
+        var item = this.queue[ 0 ];
+        item.id = Ext.id( undefined, item.type + '-file-' );
+
+        switch ( item.type ) {
+            case 'js':
+                var sc = document.createElement( 'scr' + 'ipt' );
+                sc.setAttribute( 'type', 'text/javascript' );
+                sc.setAttribute( 'src', item.file );
+                sc.setAttribute( 'id', item.id );
+                Ext.EventManager.on( sc, 'load', this.requestDone, this );
+                document.getElementsByTagName( 'head' )[ 0 ].appendChild( sc );
+                break;
+
+            case 'css':
+                Ext.Ajax.request({
+                    method: 'GET',
+                    url: item.file,
+                    scope: this,
+                    success: function( res ) {
+                        Ext.util.CSS.createStyleSheet( res.responseText, this.queue[ 0 ].id );
+                        this.requestDone();
+                    },
+                    failure: this.requestFailed
+                });
+                break;
+
+            default:
+                log('unhandled type in fetcher:'+item.type);
+        }
+
+    },
+
+    requestDone: function() {
+        this.active = false;
+
+        var item = this.queue.shift();
+        if ( item.file )
+            log('file loaded:'+item.file);
+        
+        if ( item.callback ) {
+            if ( item.scope )
+                item.callback.call( item.scope, this );
+            else
+                item.callback( this );
+        }
+        
+        if ( item.type == 'js' )
+            Ext.fly( item.id ).remove();
+
+        if ( this.queue.length )
+            this.checkQueue.defer( 10, this );
+        else {
+            log('fetcher finished');
+            if ( this.scope )
+                this.success.call( this.scope, this );
+            else
+                this.success( this );
+        }
+    },
+
+    requestFailed: function() {
+        this.active = false;
+
+        // TBD better error handling
+        log('fetcher failed to load file(s)');
+
+        if ( this.failure ) {
+            if ( this.scope )
+                this.failure.call( this.scope, this );
+            else
+                this.failure( this );
+        }
+    },
+
+    callback: function( callback, scope ) {
+        this.queue.push( { type: 'callback', callback: callback, scope: scope } );
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
 Ext.override( Ext.menu.BaseItem, {
 
     constructor: function( config ) {
@@ -1019,4 +1196,66 @@ Ext.override( Ext.menu.BaseItem, {
 /* Start the main desktop app */
 new CometDesktop.App();
 
+/* -------------------------------------------------------------------------*/
 
+CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
+
+    appChannel: '/desktop/system/login',
+
+    init: function() {
+        this.subscribe( this.appChannel, this.eventReceived, this );
+        this.publish( '/desktop/app/register', {
+            id: this.appId,
+            channel: this.appChannel,
+            text: 'Comet Desktop - Login',
+            iconCls: 'cd-icon-system-login'
+        });
+    },
+
+    eventReceived: function() {
+        this.createWindow();
+    },
+
+    createWindow: function() {
+        var win = app.getWindow( 'desktop-login-win' );
+        if ( !win )
+            win = this.create();
+        win.show();
+    },
+
+    create: function() {
+        return app.createWindow({
+            id: 'desktop-login-win',
+            title: 'Comet Desktop - Login',
+            iconCls: 'cd-icon-system-login',
+            width: 250,
+            height: 150,
+            layout: 'fit',
+            maximizable: false,
+            minimizable: false,
+            closable: false,
+            preventBodyReset: true,
+            items: [
+                {
+                    html: ['<div style="padding:10px 10px 10px 10px;"><h2>Login</h2></div>'].join('')
+                }
+            ],
+            buttonAlign: 'center',
+            buttons: [{
+                text: 'Ok',
+                handler: function() {
+                    var win = app.getWindow( 'desktop-login-win' );
+                    win.close();
+                    //win.setActive( false );
+                    //win.el.fadeOut({ duration: 1.5, callback: win.close, scope: win });
+
+                    this.publish( '/desktop/login', { action: 'login' } );
+                },
+                scope: this
+            }]
+        });
+    }
+
+});
+
+new CometDesktop.LoginApp();
