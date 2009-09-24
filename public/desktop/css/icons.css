@@ -64,7 +64,7 @@
 }
 
 .cd-icon-system-admin-login {
-    background-image: url(../images/icons/login.png) !important;
+    background-image: url(../images/icons/admin_login.png) !important;
 }
 
 .cd-icon-system-admin-system {
@@ -125,4 +125,8 @@
 
 .cd-icon-window-close {
     background-image: url(../images/icons/close.png) !important;
+}
+
+.cd-icon-system-login {
+    background-image: url(../images/icons/login.png) !important;
 }
