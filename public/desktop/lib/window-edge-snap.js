@@ -1,6 +1,6 @@
 
 /* Window Edge Snapping for Extjs 
- * Version: 1.8
+ * Version: 1.9
  *
  * Copyright (c) 2008-2009 - David W Davis, All Rights Reserved
  *
@@ -28,7 +28,7 @@ Ext.override( Ext.Window, {
 // but since Ext.Window does not pass a config obj to Ext.Window.DD
 // we'll just set them here
 Ext.ux.WindowSnap = {
-    version: '1.8',
+    version: '1.9',
     snapRange: 25, // px
     dragSnap: false,
     dropSnap: true,
@@ -75,6 +75,8 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
     },
 
     setSnapXY: function( fly, x, y, drop ) {
+        var ox = x, oy = y;
+        var lx = [], ly = [];
         var box = this.win.getBox();
         var range = Ext.ux.WindowSnap.snapRange;
         // get the window's parent container
@@ -83,8 +85,6 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
         var viewLeft = el.getLeft();
         var viewBottom = el.getBottom();
         var viewRight = el.getRight();
-        var lx = [];
-        var ly = [];
         // check the edges of the window's parent
         // right and left
         if ( Math.abs( x - viewLeft ) < range )
@@ -156,10 +156,15 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
         }
         
         // slide the window to the edge or just snap it
-        if ( drop && Ext.ux.WindowSnap.animateDropSnap )
-            fly.moveTo( x, y, { easing: 'bounceOut', duration: .3 } );
+        if ( ( x != ox || y != oy ) && drop && Ext.ux.WindowSnap.animateDropSnap )
+            fly.moveTo( x, y, {
+                easing: 'bounceOut',
+                duration: .3,
+                callback: function() { this.win.setActive(true); },
+                scope: this
+            } );
         else
-            fly.setLeftTop( x, y );
+            fly.setXY( [ x, y ] );
     },
 
     _getSnapData: function() {
