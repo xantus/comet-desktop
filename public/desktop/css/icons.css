@@ -130,3 +130,20 @@
 .cd-icon-system-login {
     background-image: url(../images/icons/login.png) !important;
 }
+
+.cd-icon-system-notification {
+    background-image: url(../images/icons/notification.png) !important;
+}
+
+.cd-icon-tip-system-notification {
+    background-image: url(../images/icons/notification.png) !important;
+    background-repeat: no-repeat !important;
+    height: 17px;
+    padding-top: 2px;
+    padding-right: 3px;
+}
+
+.cd-icon-tip-system-notification .x-tip-header-text {
+    padding-left: 20px;
+}
+

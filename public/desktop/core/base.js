@@ -49,8 +49,13 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
-                this.toolPanel = new CometDesktop.ToolPanel({ id: 'top-toolbar', region: 'north', hidden: true }),
-                this.center = new CometDesktop.Desktop(),
+                {
+                    xtype: 'cd-top-toolpanel',
+                    id: 'top-toolbar',
+                    region: 'north',
+                    hidden: true
+                },
+                this.desktop = new CometDesktop.Desktop(),
                 this.taskPanel = new Ext.Panel({
                     region: 'south',
                     width: '100%',
@@ -84,9 +89,9 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         Ext.fly( 'loading-mask' ).fadeOut( { duration: 1.5 } );
 
         Ext.EventManager.on( window, 'beforeunload', this.onUnload, this );
-        
+
         this.taskbarEl = Ext.get( 'ux-taskbar' );
-        
+
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
         this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
         this.subscribe( '/desktop/logout', this.eventLogout, this );
@@ -108,11 +113,13 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         log('app registered:'+ev.channel);
 
+        // TBD revisit this
         if ( ev.channel == '/desktop/system/login' ) {
             if ( this.user )
                 return;
 
             this.publish( ev.channel, { action: 'launch' } );
+
             return;
         }
 
@@ -120,14 +127,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.launcher.insert( this.launcher.items.length - 2, ev );
 
         this.modules.push( ev );
-
-        // hack
-//        if ( ev.autoStart )
-//            this.publish( ev.channel, { action: 'launch' } );
     },
 
     eventLogin: function() {
-        this.toolPanel.show();
+        Ext.getCmp( 'top-toolbar' ).show();
         this.taskPanel.show();
         this.viewport.doLayout();
 
@@ -138,6 +141,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                 var i = 0;
                 Ext.each( this.modules, function( m ) {
                     if ( m.autoStart ) {
+                        // TBD revisit this
                         i += 500;
                         this.publish.defer( i, this, [ m.channel, { action: 'launch' } ] );
                     }
@@ -156,7 +160,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     eventLockDesktop: function() {
-        // TODO, unlock, etc
+        // TBD, unlock, etc
         Ext.fly( 'loading-mask' ).fadeIn({
             duration: 1.5,
             callback: function() {
@@ -239,7 +243,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         if ( win.captureKeypress )
             this.keyManager.register( win );
 
-        win.render( this.center.el );
+        win.render( this.desktop.el );
         win.taskButton = this.taskbar.addTaskButton( win );
         win.animateTarget = win.taskButton.el;
 
@@ -359,21 +363,21 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     getWinWidth: function() {
-        var width = this.center.el.getWidth();
+        var width = this.desktop.el.getWidth();
         return width < 200 ? 200 : width;
     },
 
     getWinHeight: function() {
-        var height = this.center.el.getHeight();
+        var height = this.desktop.el.getHeight();
         return height < 100 ? 100 : height;
     },
 
     getWinX: function( width ) {
-        return ( this.center.el.getWidth() - width ) / 2;
+        return ( this.desktop.el.getWidth() - width ) / 2;
     },
 
     getWinY: function( height ) {
-        return ( this.center.el.getHeight() - height ) / 2;
+        return ( this.desktop.el.getHeight() - height ) / 2;
     }
 
 });
@@ -606,7 +610,14 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, ' ', ' ', {
                     text: 'System',
                     menu: systemMenu
-                }, '-', '->', '-', dateControl, '-', {
+                }, '->', dateControl, '-', {
+                    id: 'notificationArea',
+                    iconCls: 'cd-icon-system-notification',
+                    menu: [{
+                        text: 'Show Last Notification',
+                        channel: '/desktop/system/notification'
+                    }]
+                }, {
                     id: 'system-user-menu',
                     text: 'Guest User',
                     iconCls: 'cd-icon-user-status-available',
@@ -667,6 +678,8 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
 });
 
+Ext.reg( 'cd-top-toolpanel', CometDesktop.ToolPanel );
+
 /* -------------------------------------------------------------------------*/
 
 CometDesktop.Desktop = Ext.extend( Ext.BoxComponent, {
@@ -714,6 +727,8 @@ CometDesktop.Desktop = Ext.extend( Ext.BoxComponent, {
     }
 
 });
+
+Ext.reg( 'cd-desktop', CometDesktop.Desktop );
 
 /* -------------------------------------------------------------------------*/
 
@@ -768,6 +783,7 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
     },
 
     updateMenu: function( records ) {
+        // TBD attach to the store, and only modify the menu when it changes
         this.removeAll();
         this.el.sync();
 
@@ -781,6 +797,7 @@ Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
         this.loaded = true;
 
         for ( var i = 0, len = records.length; i < len; i++ ) {
+            // TBD do this, or require xtype for sub menus
             if ( records[ i ].json.menu )
                 records[ i ].json.menu = new Ext.menu.Menu( records[ i ].json.menu );
             this.add( records[ i ].json );
@@ -1131,14 +1148,14 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
         var item = this.queue.shift();
         if ( item.file )
             log('file loaded:'+item.file);
-        
+
         if ( item.callback ) {
             if ( item.scope )
                 item.callback.call( item.scope, this );
             else
                 item.callback( this );
         }
-        
+
         if ( item.type == 'js' )
             Ext.fly( item.id ).remove();
 
@@ -1213,7 +1230,9 @@ CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
     },
 
     eventReceived: function() {
-        this.createWindow();
+        /* skip the login window */
+        this.publish( '/desktop/login', { action: 'login' } );
+        //this.createWindow();
     },
 
     createWindow: function() {
@@ -1237,7 +1256,7 @@ CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
             preventBodyReset: true,
             items: [
                 {
-                    html: ['<div style="padding:10px 10px 10px 10px;"><h2>Login</h2></div>'].join('')
+                    html: ['<div style="padding:10px 10px 10px 10px;"><h2>Login</h2>Click Ok.</div>'].join('')
                 }
             ],
             buttonAlign: 'center',
