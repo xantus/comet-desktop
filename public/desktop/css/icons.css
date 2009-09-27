@@ -147,3 +147,7 @@
     padding-left: 20px;
 }
 
+.cd-icon-app-console {
+    background-image: url(../images/icons/console.png) !important;
+}
+
