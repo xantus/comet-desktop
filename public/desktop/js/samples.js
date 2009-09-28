@@ -1,18 +1,17 @@
 
-Ext.namespace( 'Apps' );
+Ext.ns( 'Apps' );
 
 Apps.SampleApp = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
-        this.publish( '/desktop/app/register', {
-            self: this,
+        this.register({
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-            autoStart: true
+//            autoStart: true
         });
     },
 
@@ -55,13 +54,13 @@ Apps.SampleApp2 = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
-        this.publish( '/desktop/app/register', {
+        this.register({
             id: this.appId,
             channel: this.appChannel,
             text: 'Sample App 2',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-            autoStart: true
+//            autoStart: true
         });
     },
 

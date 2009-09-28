@@ -14,15 +14,18 @@
 /*!
  * Comet Desktop is built on:
  *
- * Ext JS Library 3.0.0
+ * Ext JS Library 3.0.2
  * Copyright(c) 2006-2009 Ext JS, LLC
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
 
-Ext.namespace( 'CometDesktop' );
+Ext.ns( 'CometDesktop' );
+Ext.ns( 'Apps' );
 
-Ext.BLANK_IMAGE_URL = 'lib/ext-3.0.0/resources/images/default/s.gif';
+window.app = {
+    id: function( x ) { return Ext.id( undefined, x ); }
+};
 
 CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
@@ -35,6 +38,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         'core/support.js',
         'js/samples.js'
     ],
+    // XXX not sure I want to go this route
+    channels: {
+        registerApp: '/desktop/app/register'
+    },
 
     constructor: function( config ) {
         window.app = this;
@@ -43,27 +50,26 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.time( 'startup' ); // timing stats
 
         this.subscribe( '*', this.logEvents, this );
-        this.subscribe( '/desktop/app/register', this.eventRegisterApp, this );
+        this.subscribe( this.channels.registerApp, this.eventRegisterApp, this );
 
-        this.taskbar = new Ext.ux.TaskBar( this );
         this.viewport = new Ext.Viewport({
             layout: 'border',
             items:[
                 {
+                    id: 'cd-top-toolbar',
                     xtype: 'cd-top-toolpanel',
-                    id: 'top-toolbar',
                     region: 'north',
                     hidden: true
-                },
-                this.desktop = new CometDesktop.Desktop(),
-                this.taskPanel = new Ext.Panel({
+                },{
+                    id: 'cd-desktop',
+                    xtype: 'cd-desktop',
+                    region: 'center'
+                },{
+                    id: 'cd-task-panel',
+                    xtype: 'cd-task-panel',
                     region: 'south',
-                    width: '100%',
-                    height: 30,
-                    border: false,
-                    hidden: true,
-                    items: this.taskbar.container
-                })
+                    hidden: true
+                }
             ]
         });
 
@@ -84,26 +90,31 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         Ext.QuickTips.init();
 
         this.launcher = Ext.getCmp( 'appsMenu' );
+        this.desktop = Ext.getCmp( 'cd-desktop' );
+        this.taskbar = Ext.getCmp( 'cd-task-panel' );
 
         Ext.fly( 'loading' ).remove();
         Ext.fly( 'loading-mask' ).fadeOut( { duration: 1.5 } );
 
         Ext.EventManager.on( window, 'beforeunload', this.onUnload, this );
 
-        this.taskbarEl = Ext.get( 'ux-taskbar' );
-
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
         this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
         this.subscribe( '/desktop/logout', this.eventLogout, this );
         this.subscribe( '/desktop/login', this.eventLogin, this );
 
-        this.fireEvent( 'ready', this );
         this.isReady = true;
+        this.fireEvent( 'ready', this );
         this.time( 'ready' );
+
+        /* login app */
+        this.publish( '/desktop/system/login', { action: 'launch' } );
     },
 
     logEvents: function( ev, ch ) {
         log('EVENT LOG: channel:'+ch+' event:'+Ext.encode( ev ));
+        //if ( ch != '/desktop/system/notification' )
+        //    this.publish( '/desktop/system/notification', { html: '<span style="font-size:12px;font-weight:bold">channel:'+ch+'<br>event:'+Ext.encode( ev )+'</span>' } );
     },
 
     eventRegisterApp: function( ev ) {
@@ -113,16 +124,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         log('app registered:'+ev.channel);
 
-        // TBD revisit this
-        if ( ev.channel == '/desktop/system/login' ) {
-            if ( this.user )
-                return;
-
-            this.publish( ev.channel, { action: 'launch' } );
-
-            return;
-        }
-
         // insert apps before the - and add/remove menu items
         this.launcher.insert( this.launcher.items.length - 2, ev );
 
@@ -130,12 +131,13 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     eventLogin: function() {
-        Ext.getCmp( 'top-toolbar' ).show();
-        this.taskPanel.show();
+        Ext.getCmp( 'cd-top-toolbar' ).show();
+        Ext.getCmp( 'cd-task-panel' ).show();
         this.viewport.doLayout();
 
         new CometDesktop.FileFetcher({
             files: this.manifest,
+            noCache: true,
             start: true,
             success: function() {
                 var i = 0;
@@ -378,6 +380,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     getWinY: function( height ) {
         return ( this.desktop.el.getHeight() - height ) / 2;
+    },
+
+    id: function( x ) {
+        return Ext.id( undefined, x );
     }
 
 });
@@ -387,7 +393,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
     constructor: function( config ) {
-        //this.id = Ext.id( undefined, 'toolbar-' );
+        if ( !this.id )
+            this.id = app.id( 'toolbar-' );
         var appsMenu = new Ext.menu.Menu({
             id: 'appsMenu',
             style: {
@@ -576,7 +583,6 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
         setDate();
 
         CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {
-            region: 'north',
             width: '100%',
             height: 30,
             plain: true,
@@ -591,7 +597,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: 'Places',
                     menu: placesMenu
 /*
-                    menu: new Ext.ux.menu.StoreMenu({ data: [
+                    menu: new CometDesktop.menu.StoreMenu({ data: [
                         {
                             text: 'Home Folder',
                             iconCls: 'cd-icon-place-home',
@@ -686,10 +692,9 @@ CometDesktop.Desktop = Ext.extend( Ext.BoxComponent, {
 
     constructor: function( config ) {
         CometDesktop.Desktop.superclass.constructor.call( this, Ext.applyIf( config || {}, {
-            region: 'center',
             height: '100%',
             width: '100%'
-        }) );
+        } ) );
         this.on( 'render', this._onRender, this );
     },
 
@@ -732,14 +737,14 @@ Ext.reg( 'cd-desktop', CometDesktop.Desktop );
 
 /* -------------------------------------------------------------------------*/
 
-Ext.namespace( 'Ext.ux.menu' );
+Ext.ns( 'CometDesktop.menu' );
 
-Ext.ux.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
+CometDesktop.menu.StoreMenu = Ext.extend( Ext.menu.Menu, {
 
     loadMsg: Ext.LoadMask.prototype.msg || 'Loading&hellip;',
 
     constructor: function() {
-        Ext.ux.menu.StoreMenu.superclass.constructor.apply( this, arguments );
+        CometDesktop.menu.StoreMenu.superclass.constructor.apply( this, arguments );
 
         this.loaded = false;
 
@@ -813,15 +818,21 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
     constructor: function( config ) {
         Ext.apply( this, config );
 
+        // TBD use id instead?
         if ( !this.appId )
-            this.appId = Ext.id( undefined, 'app-' );
+            this.appId = app.id( 'app-' );
+        // TBD use channel instead?
         if ( !this.appChannel )
             this.appChannel = '/desktop/app/' + this.appId;
 
         this.init();
     },
 
-    init: Ext.emptyFn
+    init: Ext.emptyFn,
+
+    register: function( ev ) {
+        this.publish( app.channels.registerApp, ev );
+    }
 
 });
 
@@ -833,16 +844,16 @@ CometDesktop.KeyManager = Ext.extend( Ext.util.Observable, {
         this.wins = [];
         this.active = false;
 
+/*
         if ( Ext.isIE )
             document.onkeydown = this.keyEvent.createDelegate( this );
         else
             document.onkeypress = this.keyEvent.createDelegate( this );
-/*
+*/
         if ( Ext.isIE )
             Ext.EventManager.on( document, 'keydown', this.keyEvent, this );
         else
             Ext.EventManager.on( document, 'keypress', this.keyEvent, this );
-*/
     },
 
     keyEvent: function( ev ) {
@@ -859,9 +870,9 @@ CometDesktop.KeyManager = Ext.extend( Ext.util.Observable, {
     },
 
     register: function( win ) {
-        if ( Ext.indexOf( win ) == -1 )
-            return;
+        // TBD check for dupes?
 
+        log('register window');
         win.addEvents(
             /**
              * @event documentkeypress
@@ -917,7 +928,7 @@ CometDesktop.KeyManager = Ext.extend( Ext.util.Observable, {
 *  published on this website free of charge for any use: commercial
 *  or noncommercial."
 *
-*  Cleaned up by David Davis
+*  Modified by David Davis
 **/
 
 CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
@@ -1083,9 +1094,9 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
             var files = data.files;
             delete data.files;
             for ( var i = 0, len = files.length; i < len; i++ )
-                this.queue.push( { file: files[ i ], type: this.getType( files[ i ] ), callback: data.callback, scope: data.scope } );
+                this.queue.push( Ext.copyTo( { file: files[ i ], type: this.getType( files[ i ] ) }, data, 'callback,scope,noCache' ) );
         } else
-            this.queue.push( { file: data.file, type: this.getType( data.file ), callback: data.callback, scope: data.scope } );
+            this.queue.push( Ext.copyTo( { file: data.file, type: this.getType( data.file ) }, data, 'callback,scope,noCache' ) );
     },
 
     getType: function( file ) {
@@ -1111,13 +1122,16 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
         this.active = true;
         var item = this.queue[ 0 ];
-        item.id = Ext.id( undefined, item.type + '-file-' );
+        item.id = app.id( item.type + '-file-' );
 
         switch ( item.type ) {
             case 'js':
                 var sc = document.createElement( 'scr' + 'ipt' );
                 sc.setAttribute( 'type', 'text/javascript' );
-                sc.setAttribute( 'src', item.file );
+                if ( item.noCache || this.noCache )
+                    sc.setAttribute( 'src', Ext.urlAppend( item.file, '_dc=' + ( new Date().getTime() ) ) );
+                else
+                    sc.setAttribute( 'src', item.file );
                 sc.setAttribute( 'id', item.id );
                 Ext.EventManager.on( sc, 'load', this.requestDone, this );
                 document.getElementsByTagName( 'head' )[ 0 ].appendChild( sc );
@@ -1128,6 +1142,7 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
                     method: 'GET',
                     url: item.file,
                     scope: this,
+                    disableCaching: ( item.noCache || this.noCache ? true : false ),
                     success: function( res ) {
                         Ext.util.CSS.createStyleSheet( res.responseText, this.queue[ 0 ].id );
                         this.requestDone();
@@ -1192,10 +1207,12 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
 /* -------------------------------------------------------------------------*/
 
+/* PubSub based menus */
+
 Ext.override( Ext.menu.BaseItem, {
 
-    constructor: function( config ) {
-        Ext.menu.BaseItem.superclass.constructor.call( this, config );
+    constructor: function() {
+        Ext.menu.BaseItem.superclass.constructor.apply( this, arguments );
 
         if ( this.channel && !this.handler ) {
             log('registered menu channel '+this.channel);
@@ -1221,12 +1238,6 @@ CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
-        this.publish( '/desktop/app/register', {
-            id: this.appId,
-            channel: this.appChannel,
-            text: 'Comet Desktop - Login',
-            iconCls: 'cd-icon-system-login'
-        });
     },
 
     eventReceived: function() {

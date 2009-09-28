@@ -20,7 +20,7 @@ CometDesktop.NotificationApp = Ext.extend( CometDesktop.Module, {
             bodyCssClass: 'cd-notification-body',
             autoHide: false
         });
-        this.toolbarHeight = Ext.getCmp( 'top-toolbar' ).getHeight();
+        this.toolbarHeight = Ext.getCmp( 'cd-top-toolbar' ).getHeight();
         // bypass initTarget, we don't need hover coverage on the target
         this.tip.target = Ext.fly( 'notificationArea' ).parent();
 

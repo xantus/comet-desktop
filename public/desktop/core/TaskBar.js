@@ -1,10 +1,12 @@
 
-Ext.ux.TaskBar = Ext.extend( Ext.util.Observable, {
+Ext.ns( 'CometDesktop' );
 
-    constructor: function( app ) {
+CometDesktop.TaskBar = Ext.extend( Ext.Panel, {
+
+    constructor: function( config ) {
         var width = 30;
 
-        this.showDesktop = new Ext.Button({
+        new Ext.Button({
             text: '',
             id: 'ux-startbutton',
             iconCls: 'cd-icon-show-desktop',
@@ -21,28 +23,32 @@ Ext.ux.TaskBar = Ext.extend( Ext.util.Observable, {
             )
         });
 
-        var sbBox = new Ext.BoxComponent({
-            el: 'ux-taskbar-start',
-            id: 'TaskBarStart',
-            minWidth: width,
-            region: 'west',
-            split: true,
-            width: width
-        });
-
-        this.tbPanel = new Ext.ux.TaskButtonsPanel({
+        this.tbPanel = new CometDesktop.TaskButtonsPanel({
             el: 'ux-taskbuttons-panel',
             id: 'TaskBarButtons',
             region: 'center'
         });
 
-        this.container = new Ext.ux.TaskBarContainer({
-            el: 'ux-taskbar',
-            layout: 'border',
-            items: [ sbBox, this.tbPanel ]
-        });
-
-        return this;
+        CometDesktop.TaskBar.superclass.constructor.call( this, Ext.apply( config, {
+            width: '100%',
+            items: new CometDesktop.TaskBarContainer({
+                el: 'ux-taskbar',
+                layout: 'border',
+                border: false,
+                height: 30,
+                items: [
+                    new Ext.BoxComponent({
+                        el: 'ux-taskbar-start',
+                        id: 'TaskBarStart',
+                        minWidth: width,
+                        region: 'west',
+                        split: true,
+                        width: width
+                    }),
+                    this.tbPanel
+                ]
+            })
+        } ) );
     },
 
     addTaskButton: function( win ) {
@@ -59,11 +65,12 @@ Ext.ux.TaskBar = Ext.extend( Ext.util.Observable, {
 
 });
 
+Ext.reg( 'cd-task-panel', CometDesktop.TaskBar );
 
-Ext.ux.TaskBarContainer = Ext.extend( Ext.Container, {
+CometDesktop.TaskBarContainer = Ext.extend( Ext.Container, {
 
     initComponent: function() {
-        Ext.ux.TaskBarContainer.superclass.initComponent.call( this );
+        CometDesktop.TaskBarContainer.superclass.initComponent.call( this );
 
         this.el = Ext.get( this.el ) || Ext.getBody();
 
@@ -90,7 +97,7 @@ Ext.ux.TaskBarContainer = Ext.extend( Ext.Container, {
 });
 
 
-Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
+CometDesktop.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
 
     activeButton: null,
     enableScroll: true,
@@ -105,7 +112,7 @@ Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
     buttonWidthSet: false,
 
     initComponent: function() {
-        Ext.ux.TaskButtonsPanel.superclass.initComponent.call( this );
+        CometDesktop.TaskButtonsPanel.superclass.initComponent.call( this );
 
         this.on('resize', this.delegateUpdates );
         this.items = [];
@@ -134,7 +141,7 @@ Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
 
     addButton: function( win ) {
         var li = this.strip.createChild( { tag:'li' }, this.edge ); // insert before the edge
-        var btn = new Ext.ux.TaskBar.TaskButton( win, li );
+        var btn = new CometDesktop.TaskBar.TaskButton( win, li );
 
         this.items.push( btn );
 
@@ -196,7 +203,7 @@ Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
         for(var i = 0, len = btns.length; i < len; i++) {
             var btn = btns[i];
 
-            var tw = Ext.get(btns[i].id).findParent('li').offsetWidth;
+            var tw = Ext.fly(btns[i].id).findParent('li').offsetWidth;
             var iw = btn.offsetWidth;
 
             btn.style.width = (each - (tw-iw)) + 'px';
@@ -351,11 +358,11 @@ Ext.ux.TaskButtonsPanel = Ext.extend( Ext.BoxComponent, {
 });
 
 
-Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
+CometDesktop.TaskBar.TaskButton = Ext.extend( Ext.Button, {
 
     constructor: function( win, el ) {
         this.win = win;
-        Ext.ux.TaskBar.TaskButton.superclass.constructor.call(this, {
+        CometDesktop.TaskBar.TaskButton.superclass.constructor.call(this, {
             iconCls: win.iconCls,
             text: Ext.util.Format.ellipsis( win.title, 20 ),
             renderTo: el,
@@ -381,7 +388,7 @@ Ext.ux.TaskBar.TaskButton = Ext.extend( Ext.Button, {
     },
 
     onRender: function() {
-        Ext.ux.TaskBar.TaskButton.superclass.onRender.apply( this, arguments );
+        CometDesktop.TaskBar.TaskButton.superclass.onRender.apply( this, arguments );
 
         this.cmenu = new Ext.menu.Menu({
             items: [{
