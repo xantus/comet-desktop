@@ -36,7 +36,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     timing: [ [ 'extend', new Date() ] ],
     manifest: [
         'core/support.js',
-        'js/samples.js'
+        'js/samples.js',
+        'js/html5video.js'
     ],
     // XXX not sure I want to go this route
     channels: {
@@ -245,7 +246,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         if ( win.captureKeypress )
             this.keyManager.register( win );
 
-        win.render( this.desktop.el );
         win.taskButton = this.taskbar.addTaskButton( win );
         win.animateTarget = win.taskButton.el;
 
@@ -265,10 +265,14 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             close: {
                 fn: this.windowRemove
             },
+            beforerender: {
+                fn: this.windowRenderFix
+            },
+            show: {
+                fn: this.windowOnShow
+            },
             scope: this
         });
-
-        win.on( 'show', this.windowOnShow, win );
 
         return win;
     },
@@ -298,18 +302,18 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.taskbar.removeTaskButton( win.taskButton );
     },
 
-    windowOnShow: function() {
+    windowOnShow: function( win ) {
         // get all of the window positions in a simple x:y array
         var loc = [];
-        this.manager.each(function( w ) {
+        win.manager.each(function( w ) {
             // TBD maximized?
-            if ( !w || !w.isVisible() || this === w )
+            if ( !w || !w.isVisible() || win === w )
                 return;
             loc.push( w.getPosition().join(':') );
-        }, this);
+        }, win);
 
         // compare the windows x:y until we find a window it won't directly overlap
-        var d = this.getBox();
+        var d = win.getBox();
         var repos = false;
         while ( loc.indexOf( d.x + ':' + d.y ) != -1 ) {
             // window directly overlaps another, offset it by 24,24
@@ -319,8 +323,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         // shift the window and save the position when it is done
         if ( repos ) {
             // don't fire deactivate
-            this.el.disableShadow();
-            this.el.shift({
+            win.el.disableShadow();
+            win.el.shift({
                 x: d.x,
                 y: d.y,
                 duration: .25,
@@ -330,29 +334,43 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                     if ( !this.maximized )
                         this.el.enableShadow( true );
                 },
-                scope: this
+                scope: win
             });
         }
 
         // fix an IE6 display bug
         if ( Ext.isIE6 )
-            this.setWidth( d.width );
+            win.setWidth( d.width );
 
-        // remove the listener because we only want this effect on first show
-        this.un( 'show', app.windowOnShow, this );
+        // remove the listener because we only want win effect on first show
+        win.un( 'show', app.windowOnShow, win );
 
-        this.header.on( 'click', this.taskButton.contextMenu, this.taskButton );
-        this.header.on( 'contextmenu', this.taskButton.contextMenu, this.taskButton );
+        win.header.on( 'click', win.taskButton.contextMenu, win.taskButton );
+        win.header.on( 'contextmenu', win.taskButton.contextMenu, win.taskButton );
 
-        // TBD: option to enable/disable this
-        // remove this behavior, and enable double click to expand/collapse
-        this.header.un( 'dblclick', this.toggleMaximize, this );
-        this.header.on( 'dblclick', function() {
+        // TBD: option to enable/disable win
+        // remove win behavior, and enable double click to expand/collapse
+        win.header.un( 'dblclick', win.toggleMaximize, win );
+        win.header.on( 'dblclick', function() {
             if ( this.collapsed )
                 this.expand();
             else
                 this.collapse();
-        }, this );
+        }, win );
+    },
+
+    /* hack to allow afterrender listeners to be set
+     * since win.render( win.renderTo ); is called on
+     * window construction IF set and in essence
+     * firing afterrender before you have a chance to
+     * listen to the event
+     */
+    windowRenderFix: function( win ) {
+        if ( win.renderTo )
+            return;
+        win.render( win.renderTo = this.desktop.el );
+        delete win.renderTo;
+        return false;
     },
 
     /* TBD nuke these? */

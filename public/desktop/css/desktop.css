@@ -680,3 +680,11 @@ td.ux-taskButtons-edge {
 .cd-notification-body {
     padding: 10px !important;
 }
+
+.video-panel {
+    background-color: #000;
+    color: #fff;
+}
+.video-panel a {
+    color: #fff;
+}
