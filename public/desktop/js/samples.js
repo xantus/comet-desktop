@@ -11,7 +11,7 @@ Apps.SampleApp = Ext.extend( CometDesktop.Module, {
             text: 'Sample App',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-//            autoStart: true
+            autoStart: true
         });
     },
 
@@ -60,7 +60,7 @@ Apps.SampleApp2 = Ext.extend( CometDesktop.Module, {
             text: 'Sample App 2',
             iconCls: 'icon-grid',
             // hack: this is not how I want to auto start apps
-//            autoStart: true
+            autoStart: true
         });
     },
 

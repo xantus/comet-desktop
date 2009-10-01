@@ -32,7 +32,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     isReady: false,
     modules: [],
     minimizeAll: true,
-    activeWindow: null,
     timing: [ [ 'extend', new Date() ] ],
     manifest: [
         'core/support.js',
@@ -49,6 +48,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         Ext.apply( this, config );
 
         this.time( 'startup' ); // timing stats
+
+        Ext.WindowMgr = this.wsManager = new CometDesktop.WorkspaceManager();
+        this.keyManager = new CometDesktop.KeyManager();
+        // TBD set up this.gaTracker using the account number from the config
 
         this.subscribe( '*', this.logEvents, this );
         this.subscribe( this.channels.registerApp, this.eventRegisterApp, this );
@@ -73,11 +76,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                 }
             ]
         });
-
-        this.windowManager = new Ext.WindowGroup();
-        this.keyManager = new CometDesktop.KeyManager();
-
-        // TBD set up this.gaTracker using the account number from the config
 
         this.addEvents(
             'ready',
@@ -173,7 +171,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     eventShowDesktop: function() {
-        this.windowManager.each(function( win ) {
+        this.wsManager.each(function( win ) {
             if ( this.minimizeAll ) {
                 win.minimize();
             } else {
@@ -234,7 +232,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     createWindow: function( config, cls ) {
         var win = new ( cls || Ext.Window )(
             Ext.applyIf( config || {}, {
-                manager: this.windowManager,
+                manager: this.wsManager,
                 //constrain: true,
                 constrainHeader: true,
                 animCollapse: true,
@@ -271,10 +269,17 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             show: {
                 fn: this.windowOnShow
             },
+            iconchange: {
+                fn: this.windowIconChange
+            },
             scope: this
         });
 
         return win;
+    },
+
+    windowIconChange:function( win, newCls ) {
+        win.taskButton.setIconClass( newCls );
     },
 
     windowMinimize: function( win ) {
@@ -283,26 +288,34 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     windowMarkActive: function( win ) {
-        if ( this.activeWindow && this.activeWindow !== win )
-            this.windowMarkInactive( this.activeWindow );
+        var active = this.wsManager.getActiveWindow( win );
+        if ( active && active !== win )
+            this.windowMarkInactive( active );
+
+        this.wsManager.setActiveWindow( win );
         this.taskbar.setActiveButton( win.taskButton );
-        this.activeWindow = win;
         Ext.fly( win.taskButton.el ).addClass( 'active-win' );
         win.minimized = false;
     },
 
     windowMarkInactive: function( win ) {
-        if ( win == this.activeWindow ) {
-            this.activeWindow = null;
+        var active = this.wsManager.getActiveWindow( win );
+        if ( win === active ) {
+            // deactivate window?
+//            this.wsManager.setActiveWindow( null );
             Ext.fly( win.taskButton.el ).removeClass( 'active-win' );
         }
     },
 
     windowRemove: function( win ) {
         this.taskbar.removeTaskButton( win.taskButton );
+        win.taskButton = null;
     },
 
     windowOnShow: function( win ) {
+        win.manager.switchTo( win );
+        win.taskButton.show( null );
+
         // get all of the window positions in a simple x:y array
         var loc = [];
         win.manager.each(function( w ) {
@@ -310,7 +323,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             if ( !w || !w.isVisible() || win === w )
                 return;
             loc.push( w.getPosition().join(':') );
-        }, win);
+        }, win );
 
         // compare the windows x:y until we find a window it won't directly overlap
         var d = win.getBox();
@@ -373,15 +386,24 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         return false;
     },
 
-    /* TBD nuke these? */
     getManager: function() {
-        return this.windowManager;
+        return this.wsManager;
     },
 
     getWindow: function( id ) {
-        return this.windowManager.get( id );
+        var win = this.wsManager.find( id );
+        if ( win ) {
+            // XXX automatically move to the current workspace
+            this.wsManager.moveToCurrent( win );
+            return win;
+        }
     },
 
+    id: function( x ) {
+        return Ext.id( undefined, x );
+    },
+
+    /* TBD nuke these? */
     getWinWidth: function() {
         var width = this.desktop.el.getWidth();
         return width < 200 ? 200 : width;
@@ -398,10 +420,195 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     getWinY: function( height ) {
         return ( this.desktop.el.getHeight() - height ) / 2;
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+/* PubSub based menus */
+
+Ext.override( Ext.menu.BaseItem, {
+
+    constructor: function() {
+        Ext.menu.BaseItem.superclass.constructor.apply( this, arguments );
+
+        if ( this.channel && !this.handler ) {
+            log('registered menu channel '+this.channel);
+            this.on( 'click', function() { this.publish( this.channel, { action: 'launch' } ); }, this );
+        }
+
+        if ( this.handler )
+            this.on( 'click', this.handler, this.scope || this );
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+/* PubSub based buttons, etc */
+
+Ext.override( Ext.BoxComponent, {
+
+    initComponent: function() {
+        Ext.BoxComponent.superclass.initComponent.apply( this, arguments );
+
+        if ( this.channel && !this.handler ) {
+            log('registered box component channel '+this.channel);
+            this.on( 'click', function() { this.publish( this.channel, { action: 'launch' } ); }, this );
+        }
+    }
+
+});
+
+/* -------------------------------------------------------------------------*/
+
+CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
+
+    constructor: function( config ) {
+        Ext.apply( this, {
+            rows: 2,
+            cols: 2,
+            zseed: 9000
+        }, config );
+        this.groups = [];
+        this.groupMap = {};
+
+        /* send /desktop/workspace/switch/0 to switch to space 1 (0 based) */
+        this.subscribe( '/desktop/workspace/switch', this.eventSwitchWorkspace, this );
+
+        for ( var i = 0, len = this.rows * this.cols; i < len; i++ ) {
+            var grp = this.createWindowGroup();
+            this.groupMap[ grp.id ] = grp;
+            this.groups.push( grp ); // TBD switch to only ids?
+        }
+
+        this.wg = this.groups[ 0 ];
     },
 
-    id: function( x ) {
-        return Ext.id( undefined, x );
+    createWindowGroup: function() {
+        var group = new Ext.WindowGroup( { zseed: this.zseed } );
+        group.id = app.id( 'cd-ws-' );
+        return group;
+    },
+
+    eventSwitchWorkspace: function( ev, ch ) {
+        var id = ch.match( /\d+$/ )[0];
+        if ( !isNaN( id ) )
+            this.switchTo( id );
+    },
+
+    currentGroup: function() {
+        return this.wg;
+    },
+
+    moveToCurrent: function( win ) {
+        if ( win.wsId == this.wg.id )
+            return;
+        // move the window to the new work space
+        win.hide( null );
+        win.taskButton.hide( null );
+        this.unregister( win );
+        this.register( win );
+    },
+
+    eachAll: function() {
+        for ( var i = 0, len = this.groups.length; i < len; i++ )
+            this.groups[ i ].each.apply( this.groups[ i ], arguments );
+    },
+
+    /* pass a window obj, or id */
+    switchTo: function( ws ) {
+        if ( Ext.isObject( ws ) ) {
+            var idx;
+            for ( var i = 0, len = this.groups.length; i < len; i++ )
+                this.groups[ i ].each(function( w ) {
+                    if ( w === ws )
+                        idx = i;
+                });
+            if ( isNaN( idx ) )
+                return false;
+            else
+                ws = idx;
+        }
+
+        if ( ws > this.groups.length - 1 )
+            return false;
+
+        /* avoid hide/show */
+        if ( this.wg === this.groups[ ws ] )
+            return this.wg;
+
+        this.wg.getBy(function( win ) {
+            win.hide( null ); // no animation
+            win.taskButton.hide( null );
+        });
+
+        this.wg = this.groups[ ws ];
+
+        /* preserve the z order by using getBy which walks in last access order, and reverse it */
+        Ext.invoke( this.getBy(function() { return true; }).reverse(), 'show', null );
+
+        return this.wg;
+    },
+
+    /* find a window across all spaces */
+    find: function( id ) {
+        for ( var i = 0, len = this.groups.length; i < len; i++ ) {
+            var win = this.groups[ i ].get( id );
+            if ( win )
+                return win;
+        }
+    },
+
+    getActiveWindow: function( win ) {
+        var ws = this.groupMap[ win.wsId ]
+        return ( ws ? ws : this.wg ).getActive();
+    },
+
+    setActiveWindow: function( win ) {
+        if ( win )
+            return this.bringToFront( win );
+    },
+
+    each: function() {
+        return this.wg.each.apply( this.wg, arguments );
+    },
+
+    get: function() {
+        return this.wg.get.apply( this.wg, arguments );
+    },
+
+    getActive: function() {
+        return this.wg.getActive();
+    },
+
+    getBy: function() {
+        return this.wg.getBy.apply( this.wg, arguments );
+    },
+
+    hideAll: function() {
+        this.wg.hideAll();
+    },
+
+    bringToFront: function( win ) {
+        var ws = this.groupMap[ win.wsId ];
+        return ( ws ? ws : this.wg ).bringToFront( win );
+    },
+
+    sendToBack: function( win ) {
+        var ws = this.groupMap[ win.wsId ]
+        return ( ws ? ws : this.wg ).sendToBack( win );
+    },
+
+    register: function( win ) {
+        win.wsId = this.wg.id;
+        return this.wg.register( win );
+    },
+
+    unregister: function( win ) {
+        var ws = this.groupMap[ win.wsId ];
+        return ( ws ? ws : this.wg ).unregister( win );
     }
 
 });
@@ -600,6 +807,12 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
 
         setDate();
 
+        var wsToggle = function( btn, pressed ) {
+            if ( !pressed )
+                return;
+            app.publish( '/desktop/workspace/switch/' + btn.ws );
+        };
+
         CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {
             width: '100%',
             height: 30,
@@ -634,7 +847,35 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 }, ' ', ' ', {
                     text: 'System',
                     menu: systemMenu
-                }, '->', dateControl, '-', {
+                }, '->', {
+                    text: ' 1 ',
+                    ws: 0,
+                    enableToggle: true,
+                    toggleHandler: wsToggle,
+                    pressed: true,
+                    toggleGroup: 'ws-toggle'
+                },
+                {
+                    text: ' 2 ',
+                    ws: 1,
+                    enableToggle: true,
+                    toggleHandler: wsToggle,
+                    toggleGroup: 'ws-toggle'
+                },
+                {
+                    text: ' 3 ',
+                    ws: 2,
+                    enableToggle: true,
+                    toggleHandler: wsToggle,
+                    toggleGroup: 'ws-toggle'
+                },
+                {
+                    text: ' 4 ',
+                    ws: 3,
+                    enableToggle: true,
+                    toggleHandler: wsToggle,
+                    toggleGroup: 'ws-toggle'
+                }, '-', dateControl, '-', {
                     id: 'notificationArea',
                     iconCls: 'cd-icon-system-notification',
                     menu: [{
@@ -1219,26 +1460,6 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
     callback: function( callback, scope ) {
         this.queue.push( { type: 'callback', callback: callback, scope: scope } );
-    }
-
-});
-
-/* -------------------------------------------------------------------------*/
-
-/* PubSub based menus */
-
-Ext.override( Ext.menu.BaseItem, {
-
-    constructor: function() {
-        Ext.menu.BaseItem.superclass.constructor.apply( this, arguments );
-
-        if ( this.channel && !this.handler ) {
-            log('registered menu channel '+this.channel);
-            this.on( 'click', function() { this.publish( this.channel, { action: 'launch' } ); }, this );
-        }
-
-        if ( this.handler )
-            this.on( 'click', this.handler, this.scope || this );
     }
 
 });
