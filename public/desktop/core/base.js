@@ -230,8 +230,27 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     /* window handling */
     createWindow: function( config, cls ) {
-        var win = new ( cls || Ext.Window )(
+        tools = Ext.isArray( config.tools ) ? config.tools : [];
+        var win;
+        /*
+        tools.push({
+            id: 'gear',
+            hidden: true,
+            handler: function() { log('gear'); }
+        });
+        */
+        tools.push({
+            id: 'pin',
+            hidden: true,
+            handler: function() {
+                win.pinned = ( win.pinned ) ? false : true;
+                if ( win.pinned )
+                    win.getTool( 'pin' ).show();
+            }
+        });
+        win = new ( cls || Ext.Window )(
             Ext.applyIf( config || {}, {
+                tools: tools,
                 manager: this.wsManager,
                 //constrain: true,
                 constrainHeader: true,
@@ -358,6 +377,42 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         // remove the listener because we only want win effect on first show
         win.un( 'show', app.windowOnShow, win );
 
+        win.header.hover( function() {
+            if ( this._hoverOutTask ) {
+                this._hoverOutTask.cancel();
+                this._hoverOutTask = null;
+            }
+            if ( !this._hoverTask )
+                this._hoverTask = new Ext.util.DelayedTask( function() {
+                    this._hoverTask = null;
+                    Ext.iterate( this.tools, function( x ) {
+                        if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
+                            return;
+                        if ( x == 'pin' && this.pinned )
+                            return;
+                        this.tools[ x ].stopFx().fadeIn( { duration: .5 } );
+                    }, this );
+                }, this );
+            this._hoverTask.delay( 500 );
+        }, function() {
+            if ( this._hoverTask ) {
+                this._hoverTask.cancel();
+                this._hoverTask = null;
+            }
+            if ( !this._hoverOutTask )
+                this._hoverOutTask = new Ext.util.DelayedTask( function() {
+                    this._hoverOutTask = null;
+                    Ext.iterate( this.tools, function( x ) {
+                        if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
+                            return;
+                        if ( x == 'pin' && this.pinned )
+                            return;
+                        this.tools[ x ].stopFx().fadeOut( { duration: .3 } );
+                    }, this );
+                }, this );
+            this._hoverOutTask.delay( 700 );
+        }, win );
+
         win.header.on( 'click', win.taskButton.contextMenu, win.taskButton );
         win.header.on( 'contextmenu', win.taskButton.contextMenu, win.taskButton );
 
@@ -391,7 +446,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     getWindow: function( id ) {
-        var win = this.wsManager.find( id );
+        var win = this.wsManager.getWindow( id );
         if ( win ) {
             // XXX automatically move to the current workspace
             this.wsManager.moveToCurrent( win );
@@ -474,7 +529,9 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
         this.groups = [];
         this.groupMap = {};
 
-        /* send /desktop/workspace/switch/0 to switch to space 1 (0 based) */
+        /* send /desktop/workspace/switch/1 or
+         * /desktop/worspace/switch and event: { ws: 1 }
+         */
         this.subscribe( '/desktop/workspace/switch', this.eventSwitchWorkspace, this );
 
         for ( var i = 0, len = this.rows * this.cols; i < len; i++ ) {
@@ -493,9 +550,14 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
     },
 
     eventSwitchWorkspace: function( ev, ch ) {
-        var id = ch.match( /\d+$/ )[0];
-        if ( !isNaN( id ) )
-            this.switchTo( id );
+        if ( Ext.isObject( ev ) && ev.ws ) {
+            if ( !isNaN( ev.ws ) )
+                this.switchTo( ev.ws );
+        } else {
+            var id = ch.match( /\d+$/ )[0];
+            if ( !isNaN( id ) )
+                this.switchTo( id );
+        }
     },
 
     currentGroup: function() {
@@ -517,8 +579,8 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
             this.groups[ i ].each.apply( this.groups[ i ], arguments );
     },
 
-    /* pass a window obj, or id */
-    switchTo: function( ws ) {
+    /* pass a window obj, or workspace id */
+    getWorkspace: function( ws ) {
         if ( Ext.isObject( ws ) ) {
             var idx;
             for ( var i = 0, len = this.groups.length; i < len; i++ )
@@ -530,30 +592,47 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
                 return false;
             else
                 ws = idx;
-        }
+        } else
+            ws -= 1; // make it zero based
 
         if ( ws > this.groups.length - 1 )
-            return false;
+            return;
+
+        return this.groups[ ws ];
+    },
+
+    /* pass a window obj, or workspace id */
+    switchTo: function( ws ) {
+        ws = this.getWorkspace( ws );
+        if ( !ws )
+            return;
 
         /* avoid hide/show */
-        if ( this.wg === this.groups[ ws ] )
+        if ( this.wg === ws )
             return this.wg;
 
-        this.wg.getBy(function( win ) {
+        /* preserve the z order by using getBy which walks in last access order, and reverse it */
+        var winlist = this.getBy(function() { return true; }).reverse();
+
+        Ext.each( winlist, function( win ) {
             win.hide( null ); // no animation
             win.taskButton.hide( null );
-        });
+            if ( win.pinned ) {
+                this.unregister( win );
+                win.wsId = ws.id;
+                ws.register( win );
+            }
+        }, this );
 
-        this.wg = this.groups[ ws ];
+        this.wg = ws;
 
-        /* preserve the z order by using getBy which walks in last access order, and reverse it */
-        Ext.invoke( this.getBy(function() { return true; }).reverse(), 'show', null );
+        Ext.invoke( winlist, 'show', null );
 
         return this.wg;
     },
 
     /* find a window across all spaces */
-    find: function( id ) {
+    getWindow: function( id ) {
         for ( var i = 0, len = this.groups.length; i < len; i++ ) {
             var win = this.groups[ i ].get( id );
             if ( win )
@@ -810,7 +889,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
         var wsToggle = function( btn, pressed ) {
             if ( !pressed )
                 return;
-            app.publish( '/desktop/workspace/switch/' + btn.ws );
+            app.publish( '/desktop/workspace/switch', { ws: btn.ws } );
         };
 
         CometDesktop.ToolPanel.superclass.constructor.call( this, Ext.applyIf( config, {
@@ -849,7 +928,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     menu: systemMenu
                 }, '->', {
                     text: ' 1 ',
-                    ws: 0,
+                    ws: 1,
                     enableToggle: true,
                     toggleHandler: wsToggle,
                     pressed: true,
@@ -857,21 +936,21 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 },
                 {
                     text: ' 2 ',
-                    ws: 1,
-                    enableToggle: true,
-                    toggleHandler: wsToggle,
-                    toggleGroup: 'ws-toggle'
-                },
-                {
-                    text: ' 3 ',
                     ws: 2,
                     enableToggle: true,
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'
                 },
                 {
-                    text: ' 4 ',
+                    text: ' 3 ',
                     ws: 3,
+                    enableToggle: true,
+                    toggleHandler: wsToggle,
+                    toggleGroup: 'ws-toggle'
+                },
+                {
+                    text: ' 4 ',
+                    ws: 4,
                     enableToggle: true,
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'

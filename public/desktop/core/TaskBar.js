@@ -415,6 +415,17 @@ CometDesktop.TaskBar.TaskButton = Ext.extend( Ext.Button, {
                 },
                 scope: this.win
             }, '-', {
+                id: 'cd-window-pin-' + this.win.id,
+                text: 'Pin Window',
+                handler: function() {
+                    this.pinned = ( this.pinned ) ? false : true;
+                    if ( this.pinned )
+                        this.getTool( 'pin' ).stopFx().show();
+                    else
+                        this.getTool( 'pin' ).stopFx().hide();
+                },
+                scope: this.win
+            }, '-', {
                 text: 'Close',
                 iconCls: 'cd-icon-window-close',
                 handler: this.closeWin.createDelegate(this, this.win, true),
@@ -422,18 +433,16 @@ CometDesktop.TaskBar.TaskButton = Ext.extend( Ext.Button, {
             }]
         });
 
-        // bug: This NEVER fires!
-        this.cmenu.on('beforeshow', function(){
-            log('before show');
-        }, this);
-
         this.el.on( 'contextmenu', this.contextMenu, this );
     },
 
     contextMenu: function( e, el ) {
         e.stopEvent();
-        if ( !this.cmenu.el )
+        if ( !this.cmenu.el ) {
             this.cmenu.render();
+            // click on the menu item when right clicked
+            this.cmenu.el.on( 'contextmenu', this.cmenu.onClick, this.cmenu );
+        }
 
         var items = this.cmenu.items.items;
         var w = this.win;
@@ -450,11 +459,18 @@ CometDesktop.TaskBar.TaskButton = Ext.extend( Ext.Button, {
         if ( Ext.isBoolean( w.maximizable ) && w.maximizable === false )
             items[2].setDisabled( true );
 
+        // pin/unpin
+        var pin = Ext.getCmp( 'cd-window-pin-' + w.id );
+        if ( w.pinned !== true )
+            pin.setText( 'Pin Window' );
+        else
+            pin.setText( 'Unpin Window' );
+
         // close
         if ( Ext.isBoolean( w.closable ) && w.closable !== true )
-            items[3].setDisabled( true );
+            items[4].setDisabled( true );
         else
-            items[3].setDisabled( false );
+            items[4].setDisabled( false );
 
         var xy = e.getXY();
 
