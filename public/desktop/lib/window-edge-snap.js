@@ -156,14 +156,22 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
         }
         
         // slide the window to the edge or just snap it
-        if ( ( x != ox || y != oy ) && drop && Ext.ux.WindowSnap.animateDropSnap )
-            fly.moveTo( x, y, {
+        if ( ( x != ox || y != oy ) && drop && Ext.ux.WindowSnap.animateDropSnap ) {
+            this.win.el.disableShadow();
+            fly.shift({
+                x: x,
+                y: y,
                 easing: 'bounceOut',
                 duration: .3,
-                callback: function() { this.win.setActive(true); },
+                callback: function() {
+                    this.win.setPagePosition( x, y );
+                    this.win.setActive(true);
+                    if ( !this.win.maximized )
+                        this.win.el.enableShadow( true );
+                },
                 scope: this
             } );
-        else
+        } else
             fly.setXY( [ x, y ] );
     },
 
