@@ -390,7 +390,9 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                             return;
                         if ( x == 'pin' && this.pinned )
                             return;
-                        this.tools[ x ].stopFx().fadeIn( { duration: .5 } );
+                        try {
+                            this.tools[ x ].stopFx().fadeIn( { duration: .5 } );
+                        } catch(e){};
                     }, this );
                 }, this );
             this._hoverTask.delay( 500 );
@@ -407,7 +409,9 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                             return;
                         if ( x == 'pin' && this.pinned )
                             return;
-                        this.tools[ x ].stopFx().fadeOut( { duration: .3 } );
+                        try {
+                            this.tools[ x ].stopFx().fadeOut( { duration: .3 } );
+                        } catch(e){};
                     }, this );
                 }, this );
             this._hoverOutTask.delay( 700 );
@@ -612,21 +616,20 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
             return this.wg;
 
         /* preserve the z order by using getBy which walks in last access order, and reverse it */
-        var winlist = this.getBy(function() { return true; }).reverse();
-
-        Ext.each( winlist, function( win ) {
-            win.hide( null ); // no animation
-            win.taskButton.hide( null );
+        Ext.each( this.getBy(function() { return true; }).reverse(), function( win ) {
             if ( win.pinned ) {
                 this.unregister( win );
                 win.wsId = ws.id;
                 ws.register( win );
+            } else {
+                win.hide( null ); // no animation
+                win.taskButton.hide( null );
             }
         }, this );
 
         this.wg = ws;
 
-        Ext.invoke( winlist, 'show', null );
+        Ext.invoke( this.getBy(function() { return true; }).reverse(), 'show', null );
 
         return this.wg;
     },
