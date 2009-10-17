@@ -36,7 +36,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     manifest: [
         'core/support.js',
         'js/samples.js',
-        'js/html5video.js'
+        'js/html5video.js',
+        'js/googlewave.js'
     ],
     // XXX not sure I want to go this route
     channels: {
@@ -485,6 +486,19 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
 /* -------------------------------------------------------------------------*/
 
+Ext.onReady(function() {
+
+    try {
+        document.write = function( html ) {
+            log('document.write captured:', arguments);
+            Ext.DomHelper.insertHtml( 'afterEnd', document.body, html );
+        };
+    } catch(e) { log('document write catch error:'+e); };
+
+});
+
+/* -------------------------------------------------------------------------*/
+
 /* PubSub based menus */
 
 Ext.override( Ext.menu.BaseItem, {
@@ -616,8 +630,9 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
             return this.wg;
 
         /* preserve the z order by using getBy which walks in last access order, and reverse it */
-        Ext.each( this.getBy(function() { return true; }).reverse(), function( win ) {
+        Ext.each( this.getBy(function() { return true }).reverse(), function( win ) {
             if ( win.pinned ) {
+                // move the window to the new workspace
                 this.unregister( win );
                 win.wsId = ws.id;
                 ws.register( win );
@@ -629,7 +644,14 @@ CometDesktop.WorkspaceManager = Ext.extend( Ext.util.Observable, {
 
         this.wg = ws;
 
-        Ext.invoke( this.getBy(function() { return true; }).reverse(), 'show', null );
+//        Ext.invoke( this.getBy(function() { return true }).reverse(), 'show', null );
+        Ext.each( this.getBy(function() { return true }).reverse(), function( win ) {
+            // keep the window minimized
+            if ( win.minimized )
+                win.taskButton.show( null );
+            else
+                win.show();
+        }, this );
 
         return this.wg;
     },
@@ -1417,7 +1439,7 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
 
 CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
-    extRegexp: /\.(\S+)$/,
+    extRegexp: /\.([^\./]+)$/,
 
     constructor: function( config ) {
         this.queue = [];
@@ -1441,7 +1463,9 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
     },
 
     getType: function( file ) {
-        return this.extRegexp( file )[ 1 ];
+        var r = this.extRegexp.exec( file );
+//        if ( r )
+            return r[ 1 ];
     },
 
     start: function( config ) {
