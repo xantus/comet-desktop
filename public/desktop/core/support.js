@@ -60,7 +60,7 @@ CometDesktop.NotificationApp = Ext.extend( CometDesktop.Module, {
             this.show( ev.html );
         else
             this.show();
-    },
+    }
 
 });
 
@@ -104,7 +104,7 @@ CometDesktop.AboutApp = Ext.extend( CometDesktop.Module, {
                     html: ['<div style="padding:10px 10px 10px 10px;"><h2>Comet Desktop</h2><h3>Ext web desktop</h3><br>',
                     '<a href="http://github.com/xantus/comet-desktop">Comet Desktop at Github</a>',
                     '<h3>Authors</h3><ul><li>David Davis - <a href="http://xant.us/" target="_blank">http://xant.us/</a></li>',
-                    '<li>Jonathan Leppert</li></ul></div>'].join('')
+                    '</ul></div>'].join('')
                 }
             ]
         });

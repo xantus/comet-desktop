@@ -7,8 +7,6 @@
  * David Davis      - <xantus@xantus.org>
  * http://xant.us/
  *
- * Jonathan Leppert - <Johnathan.Leppert@gmail.com>
- *
  */
 
 /*!
