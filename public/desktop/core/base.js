@@ -9,7 +9,7 @@
  *
  */
 
-/*!
+/*
  * Comet Desktop is built on:
  *
  * Ext JS Library 3.0.2
@@ -22,7 +22,7 @@ Ext.ns( 'CometDesktop' );
 Ext.ns( 'Apps' );
 
 window.app = {
-    id: function( x ) { return Ext.id( undefined, x ); }
+    id: function( x ) { return Ext.id( null, x ); }
 };
 
 CometDesktop.App = Ext.extend( Ext.util.Observable, {
@@ -35,7 +35,11 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         'core/support.js',
         'js/samples.js',
         'js/html5video.js',
-        'js/googlewave.js'
+        'js/googlewave.js'//,
+//        'js/media.js',
+//        'js/xmpp/client.js'//,
+//        'js/feed-reader/feed-reader.css',
+//        'js/feed-reader/feed-reader.js',
     ],
     // XXX not sure I want to go this route
     channels: {
@@ -458,7 +462,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     id: function( x ) {
-        return Ext.id( undefined, x );
+        return Ext.id( null, x );
     },
 
     /* TBD nuke these? */
@@ -1182,17 +1186,54 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
         // TBD use id instead?
         if ( !this.appId )
             this.appId = app.id( 'app-' );
+
         // TBD use channel instead?
         if ( !this.appChannel )
             this.appChannel = '/desktop/app/' + this.appId;
 
-        this.init();
+        this.init( config );
+
+        if ( this.requires )
+            this.loadFiles( this.requires );
+        else
+            this.startup();
     },
 
     init: Ext.emptyFn,
+    startup: Ext.emptyFn,
 
     register: function( ev ) {
         this.publish( app.channels.registerApp, ev );
+    },
+
+    __loadSuccess: function() {
+        this.publish( this.appChannel, { action: 'deps-loaded', success: true } );
+        this.__fetcher = null;
+        this.startup();
+    },
+
+    __loadFailure: function() {
+        log('failed to load all files, retrying');
+        this.__retryCount++;
+        if ( this.__retryCount > 10 )
+            return;
+        this.__fetcher.start();
+    },
+
+    loadFiles: function( files ) {
+        if ( Ext.isEmpty( files ) )
+            return;
+        if ( !Ext.isArray( files ) )
+            files = [ files ];
+
+        this.__fetcher = new CometDesktop.FileFetcher({
+            files: files,
+            noCache: true,
+            start: true,
+            success: this.__loadSuccess,
+            failure: this.__loadFailure,
+            scope: this
+        });
     }
 
 });
@@ -1438,6 +1479,7 @@ CometDesktop.SHA1 = Ext.extend( Ext.util.Observable, {
 CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
     extRegexp: /\.([^\./]+)$/,
+    basedirRegexp: /(^.+)\/[^\/]*$/,
 
     constructor: function( config ) {
         this.queue = [];
@@ -1455,15 +1497,20 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
             var files = data.files;
             delete data.files;
             for ( var i = 0, len = files.length; i < len; i++ )
-                this.queue.push( Ext.copyTo( { file: files[ i ], type: this.getType( files[ i ] ) }, data, 'callback,scope,noCache' ) );
+                this.queue.push( Ext.copyTo( { file: files[ i ] }, data, 'callback,scope,noCache' ) );
         } else
-            this.queue.push( Ext.copyTo( { file: data.file, type: this.getType( data.file ) }, data, 'callback,scope,noCache' ) );
+            this.queue.push( Ext.copyTo( { file: data.file }, data, 'callback,scope,noCache' ) );
     },
 
     getType: function( file ) {
         var r = this.extRegexp.exec( file );
 //        if ( r )
             return r[ 1 ];
+    },
+
+    getBaseDir: function( file ) {
+        var r = this.basedirRegexp.exec( file );
+        return r[ 1 ];
     },
 
     start: function( config ) {
@@ -1486,6 +1533,10 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
         this.active = true;
         var item = this.queue[ 0 ];
         item.id = app.id( item.type + '-file-' );
+        if ( !item.type )
+            item.type = this.getType( item.file );
+
+        item.basedir = this.getBaseDir( item.file );
 
         switch ( item.type ) {
             case 'js':
@@ -1507,7 +1558,10 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
                     scope: this,
                     disableCaching: ( item.noCache || this.noCache ? true : false ),
                     success: function( res ) {
-                        Ext.util.CSS.createStyleSheet( res.responseText, this.queue[ 0 ].id );
+                        // hack
+                        var txt = res.responseText.replace( 'url(', 'url(' + item.basedir + '/', 'g' );
+                        txt = txt.replace( "src='", "src='" + item.basedir + '/', 'g' );
+                        Ext.util.CSS.createStyleSheet( txt, this.queue[ 0 ].id );
                         this.requestDone();
                     },
                     failure: this.requestFailed
