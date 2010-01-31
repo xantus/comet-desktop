@@ -1,4 +1,0 @@
-% my $c = shift;
-% $c->stash( layout => 'wrapper', title => 'Welcome' );
-
-Welcome, <%= $c->user->user_id %>. | <a href="/logout">Logout</a> 

@@ -1,6 +1,5 @@
-% my $c = shift;
-% my $v = $c->desktop_version;
-% my $title = $c->stash( 'title' ) ? ' - '.$c->stash( 'title' ) : '';
+% my $v = $self->desktop_version;
+% my $title = $self->stash( 'title' ) ? ' - '.$self->stash( 'title' ) : '';
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
@@ -13,6 +12,6 @@
     <meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 </head>
 <body>
-<%= $c->render_inner %>
+<%= $self->render_inner %>
 </body>
 </html>

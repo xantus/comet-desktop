@@ -1,13 +1,13 @@
+% if ($self->app->mode eq 'development') {
 % use Data::Dumper ();
-% my $self = shift;
 % my $s = $self->stash;
-% my $e = $self->stash('exception');
+% my $e = $s->{exception};
 % delete $s->{inner_template};
 <!html>
 <head><title>Exception</title></head>
     <body>
         This page was generated from the template
-        "templates/exception.html.epl".
+        "templates/exception.html.ep".
         <pre><%= $e->message %></pre>
         <pre>
 % for my $line (@{$e->lines_before}) {
@@ -21,14 +21,17 @@
 % }
         </pre>
         <pre>
-% for my $frame (@{$e->stack}) {
-<%== $frame->[1] %>: <%= $frame->[2] %>
-% }
-        </pre>
-        <pre>
 % delete $s->{exception};
 %== Data::Dumper->new([$s])->Maxdepth(2)->Indent(1)->Terse(1)->Dump
 % $s->{exception} = $e;
         </pre>
     </body>
 </html>
+<% } else { %>
+<!html>
+<head><title>Exception</title></head>
+    <body>
+        Internal Server Error
+    </body>
+</html>
+<% } %>

@@ -1,10 +1,9 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-% my $c = shift;
-% my $ga_account = $c->google_analytics_acct;
-% my $v = $c->desktop_version;
-% my $title = $c->stash( 'title' ) ? ' - '.$c->stash( 'title' ) : '';
-% my $chromeframe = $c->stash( 'disable_chromeframe' ) ? 0 : 1;
-% my $ext = $c->stash( 'ext_version' ) ? 'ext-'.$c->stash( 'ext_version' ) : 'ext-3.0.2';
+% my $ga_account = $self->google_analytics_acct;
+% my $v = $self->desktop_version;
+% my $title = $self->stash( 'title' ) ? ' - '.$self->stash( 'title' ) : '';
+% my $chromeframe = $self->stash( 'disable_chromeframe' ) ? 0 : 1;
+% my $ext = $self->stash( 'ext_version' ) ? 'ext-'.$self->stash( 'ext_version' ) : 'ext-3.0.2';
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">

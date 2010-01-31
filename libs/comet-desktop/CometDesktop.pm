@@ -7,17 +7,11 @@ use CometDesktop::Session;
 use CometDesktop::Controller;
 use DBI;
 use DBIx::Simple;
+use Scalar::Util 'weaken';
 
 use base 'Mojolicious';
 
 our $VERSION = '0.01';
-
-#__PACKAGE__->attr(
-#    'session' => (
-#        chained => 1,
-#        default => sub { CometDesktop::Session->new }
-#    )
-#);
 
 # This method will run for each request
 sub process {
@@ -26,18 +20,17 @@ sub process {
     # set the mojo version
     $c->res->headers->header( 'X-Powered-By' => 'Mojo/'.$Mojo::VERSION );
 
-    # set the connection id
-    if ( my $sock = UNIVERSAL::can( $c->tx->connection, 'sock' ) ) {
-        # anyevent specific
+    if ( $self->mode eq 'development' ) {
+        # set the connection id, useful for debugging
         $c->res->headers->header( 'X-Mojo-Connection' => $1 )
-            if ( "$sock" =~ m/\(0x([^\)]+)\)$/ );
+            if ( $c->tx->connection =~ m/\(0x([^\)]+)\)$/ );
     }
-    
-    my $home = Mojo::Home->new->detect( __PACKAGE__ );
 
     # database
     # TBD, move this
-    my $dbh = DBI->connect( "dbi:SQLite2:dbname=$home/db/main.db" )
+    #my $home = $self->home;
+    #my $dbh = DBI->connect( "dbi:SQLite:dbname=$home/db/main.db" )
+    my $dbh = DBI->connect( "dbi:mysql:desktop:localhost", 'root' )
         or die 'DBI connect failed';
 
     # session
@@ -50,6 +43,8 @@ sub process {
     # user class, weak ref to dbix
     $c->user->db( $db );
 
+    weaken $db;
+
     $c->db( $db );
 
     $self->dispatch( $c );
@@ -58,7 +53,7 @@ sub process {
 sub prod_mode {
     my $self = shift;
 
-    $self->log->level( 'info' );
+    $self->log->level( 'error' );
 }
 
 sub development_mode {
@@ -71,39 +66,33 @@ sub development_mode {
 sub startup {
     my $self = shift;
 
+    # template helper <%= ext_path %>
+    # TBD get this from a config file
+    $self->renderer->add_helper(
+        ext_path => sub { 'lib/ext-3.0.0' }
+    );
+
+    $self->types->type( 'ogv' => 'video/ogg' );
+    $self->types->type( 'ogm' => 'video/ogg' );
+    #$self->types->type( 'ogg' => 'audio/ogg' );
+    $self->types->type( 'ogg' => 'application/ogg' );
+    $self->types->type( 'mp3' => 'audio/mpeg' );
+
     # Use our own controller
     $self->controller_class( 'CometDesktop::Controller' );
-    
+
     # Auth Bridge
-    my $auth = $self->routes->bridge->to(
-        controller => 'auth',
-        action => 'auth'
-    );
+    my $auth = $self->routes->bridge->to( 'auth#auth' );
 
-    $auth->route( '/login' )->via( 'get' )->to(
-        controller => 'auth',
-        action => 'login'
-    )->name( 'login' );
+    # TBD use method check in auth#login
+    $auth->route( '/login' )->via( 'get' )->to( 'auth#login' )->name( 'login' );
+    $auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
 
-    $auth->route( '/login' )->via( 'post' )->to(
-        controller => 'auth',
-        action => 'login_post'
-    );
-
-    $auth->route( '/logout' )->via( 'get' )->to(
-        controller => 'auth',
-        action => 'logout'
-    )->name( 'logout' );
+    $auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
     
-    $auth->route( '/desktop' )->via( 'get' )->to(
-        controller => 'desktop',
-        action => 'root'
-    )->name( 'desktop' );
+    $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
     
-    $auth->route( '/' )->via('get')->to(
-        controller => 'auth',
-        action => 'root'
-    )->name( 'root' );
+    $auth->route( '/' )->via('get')->to( 'auth#root' )->name( 'root' );
     
     return;
 }

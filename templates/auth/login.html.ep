@@ -1,7 +1,6 @@
-% my $c = shift;
-% $c->stash( layout => 'wrapper', title => 'Login' );
+% $self->stash( layout => 'wrapper', title => 'Login' );
 <h3>Login</h3>
-% my $error = $c->stash( 'error_code' );
+% my $error = $self->stash( 'error_code' );
 <% if ( $error ) { %>
     <div style="color:red; font-weight:bold">
     <% if ( $error eq 'INVALID' ) { %>
