@@ -1,0 +1,3 @@
+[submodule "libs/mojo-origin"]
+	path = libs/mojo-origin
+	url = git://github.com/kraih/mojo.git
