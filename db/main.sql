@@ -1,4 +1,4 @@
-BEGIN TRANSACTION;
+
 CREATE TABLE session (
         sid          VARCHAR(40) PRIMARY KEY,
         data         TEXT,
@@ -12,5 +12,3 @@ CREATE TABLE users (
         UNIQUE(user_id)
     );
 INSERT INTO users VALUES('test','test@cometdesktop.com','testing');
-COMMIT;
-
