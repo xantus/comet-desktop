@@ -1,11 +1,37 @@
+-------------------------------------------------------------
+           Comet Desktop v2 - Extjs Web Desktop
+-------------------------------------------------------------
+http://github.com/xantus/comet-desktop
 
-Comet Desktop v2
-Extjs Web Desktop
 
-Requirements (included)
+This version is completely rewritten!  The backend is Mojo
+which has no other requirements other than Perl 5.8.1+
+Mojo has a built-in web server, and supports CGI, and FastCGI
 
-Mojo, http://mojolicious.org/
-DBIx::Simple
-MojoX::Session
-DBI
+Comet Desktop can run on almost anything, including Windows!
+(we dev on linux, so report any win32 issues :>)
 
+To start the standalone server:
+
+./run
+
+CGI, and FastCGI will be covered later when the code is more
+mature.
+
+
+--
+This is v2 of Comet Desktop, the OLD v1 can be found on
+Google Code at http://code.google.com/p/cometdesktop/
+
+-------------------------------------------------------------
+                       github Users
+-------------------------------------------------------------
+To check out Comet Desktop from github:
+
+git clone git://github.com/kraih/mojo.git
+git submodule update --init
+
+This will fetch Comet Desktop, and update the
+mojo submodule from their remote repo which
+is located at http://github.com/kraih/mojo
+-------------------------------------------------------------
