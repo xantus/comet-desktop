@@ -11,10 +11,10 @@ WriteMakefile(
     NAME          => 'CometDesktop',
     AUTHOR        => 'David Davis <xantus@xantus.org>',
     ABSTRACT      => 'CometDesktop, web desktop',
-    VERSION_FROM  => 'lib/CometDesktop.pm', # finds $VERSION
+    VERSION_FROM  => 'libs/comet-desktop/lib/CometDesktop.pm', # finds $VERSION
     PREREQ_PM => {
-        'Mojo'            => 0.991250,
-        'DBIx::Simple'    => 0,
+#        'Mojo'            => 0.991250,  # included
+#        'DBIx::Simple'    => 0,         # included
 #        'Digest::SHA'    => 0,
 #        'Digest::SHA::PurePerl'    => 0,
     },
@@ -22,7 +22,7 @@ WriteMakefile(
         COMPRESS  => 'gzip -9f',
         SUFFIX    => 'gz',
 #        PREOP     => (
-#            'svn-log.perl | tee ./$(DISTNAME)-$(VERSION)/CHANGES > ./CHANGES'
+#            'git log > ./CHANGES'
 #        ),
     },
 );
