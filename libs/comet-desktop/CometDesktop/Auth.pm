@@ -12,7 +12,7 @@ sub root {
     $res->headers->header( Pragma => 'nocache' );
     $res->headers->header( 'Cache-Control' => 'no-cache' );
     $res->headers->header( Expires => 0 );
-
+    
     if ( $self->user->logged_in ) {
         $self->redirect( 'desktop', '/' );
     } else {
@@ -81,6 +81,7 @@ sub auth {
     } else {
         $self->app->log->debug('No session was found');
     }
+    return 1;
 }
 
 sub logout {
@@ -93,6 +94,13 @@ sub logout {
     }
 
     return $self->redirect( 'root' );
+}
+
+sub deny {
+    my $self = shift;
+
+    $self->res->code( 500 );
+    $self->render( text => 'go away' );
 }
 
 1;
