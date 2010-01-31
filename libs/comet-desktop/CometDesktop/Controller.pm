@@ -6,9 +6,10 @@ use warnings;
 use base 'Mojolicious::Controller';
 
 use CometDesktop::User;
-use JSON::Any;
 
-__PACKAGE__->attr( json => sub { JSON::Any->new } );
+__PACKAGE__->attr( json => sub { Mojo::JSON->new } );
+__PACKAGE__->attr( false => sub { Mojo::JSON->false } );
+__PACKAGE__->attr( true => sub { Mojo::JSON->true } );
 
 __PACKAGE__->attr( session_secret => 'changeMe' );
 
@@ -36,6 +37,7 @@ sub redirect {
     return;
 }
 
+# to be removed
 sub json_response {
     my ( $self, $data, $jsonp ) = @_;
 
@@ -44,7 +46,7 @@ sub json_response {
     # or application/json; charset=UTF-8
     $self->res->headers->content_type( $jsonp ? 'text/javascript+json' : 'text/javascript' );
 
-    my $out = $self->json->objToJson( $data );
+    my $out = $self->json->encode( $data );
     warn Data::Dumper->Dump([$out],['data_out']);
 
     $self->res->body( $jsonp ? $jsonp.'('.$out.');' : $out );
@@ -65,12 +67,12 @@ sub get_cookie {
 
 sub json_encode {
     my $self = shift;
-    return eval { $self->json->objToJson( @_ ); };
+    return eval { $self->json->encode( @_ ); };
 }
 
 sub json_decode {
     my $self = shift;
-    return eval { $self->json->jsonToObj( @_ ); };
+    return eval { $self->json->decode( @_ ); };
 }
 
 # never use a cookie directly, verify it's good first
