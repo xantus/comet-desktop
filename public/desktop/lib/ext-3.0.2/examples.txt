@@ -1,1 +1,0 @@
-Examples not included, use the extjs site instead.
