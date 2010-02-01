@@ -13,6 +13,8 @@ use Bootstrapper; # in bin/lib
 # Check if Mojo is installed
 use Mojolicious; # in libs/mojo
 
+print "This is Mojo/$Mojo::VERSION\n";
+
 # Start application
 use CometDesktop; # in libs/comet-desktop
 
