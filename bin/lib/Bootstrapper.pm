@@ -19,6 +19,7 @@ BEGIN {
         foreach ( sort { $a cmp $b } @dirs ) {
             print "$_ ";
             eval( "use lib \"$d/$_\";" );
+            eval( "use lib \"$d/$_/lib\";" ) if ( -d "$d/$_/lib" )
         }
     }
 
