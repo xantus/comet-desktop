@@ -11,7 +11,7 @@ WriteMakefile(
     NAME          => 'CometDesktop',
     AUTHOR        => 'David Davis <xantus@xantus.org>',
     ABSTRACT      => 'CometDesktop, web desktop',
-    VERSION_FROM  => 'libs/comet-desktop/lib/CometDesktop.pm', # finds $VERSION
+    VERSION_FROM  => 'libs/comet-desktop/CometDesktop.pm', # finds $VERSION
     PREREQ_PM => {
 #        'Mojo'            => 0.991250,  # included
 #        'DBIx::Simple'    => 0,         # included

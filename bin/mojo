@@ -1,0 +1,32 @@
+#!/usr/bin/env perl
+
+# Copyright (C) 2008-2010, Sebastian Riedel.
+
+use strict;
+use warnings;
+
+use Cwd 'getcwd';
+use File::Spec;
+use FindBin;
+
+# Dist
+use lib "$FindBin::Bin/lib";
+use lib "$FindBin::Bin/../lib";
+
+# App
+use lib join '/', File::Spec->splitdir(getcwd), 'lib';
+
+$ENV{MOJO_HOME} = "$FindBin::Bin/../" unless exists $ENV{MOJO_HOME};
+
+use Bootstrapper;
+
+# Check if Mojo is installed
+eval 'use Mojo::Commands';
+die <<EOF if $@;
+It looks like you don't have the Mojo Framework installed.
+Please visit http://mojolicious.org for detailed installation instructions.
+
+EOF
+
+# Start the command system
+Mojo::Commands->start;
