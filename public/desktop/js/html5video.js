@@ -11,8 +11,8 @@ Apps.HTML5VideoPlayer = Ext.extend( CometDesktop.Module, {
             id: this.appId,
             channel: this.appChannel,
             text: 'Video Player',
-            iconCls: this.iconCls,
-            autoStart: true
+            iconCls: this.iconCls//,
+//            autoStart: true
         });
     },
 
