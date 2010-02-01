@@ -3,7 +3,6 @@
 % my $v = $self->desktop_version;
 % my $title = $self->stash( 'title' ) ? ' - '.$self->stash( 'title' ) : '';
 % my $chromeframe = $self->stash( 'disable_chromeframe' ) ? 0 : 1;
-% my $ext = $self->stash( 'ext_version' ) ? 'ext-'.$self->stash( 'ext_version' ) : 'ext-3.0.2';
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -42,7 +41,7 @@
 }
 #loading .loading-indicator {
     background: #000;
-    background-image: url(lib/<%= $ext %>/resources/images/default/grid/loading.gif);
+    background-image: url(lib/<%= ext_version %>/resources/images/default/grid/loading.gif);
     background-repeat: no-repeat;
     background-position: bottom center;
     color: #fff;
@@ -55,7 +54,7 @@
 </style>
 
 <!-- ExtJS CSS -->
-<link rel="stylesheet" type="text/css" href="lib/<%= $ext %>/resources/css/ext-all.css" />
+<link rel="stylesheet" type="text/css" href="lib/<%= ext_version %>/resources/css/ext-all.css" />
 
 <!-- CSS -->
 <link rel="stylesheet" type="text/css" href="css/desktop.css" />
@@ -79,8 +78,8 @@
 </div>
 
 <!-- ExtJS -->
-<script type="text/javascript" src="lib/<%= $ext %>/adapter/ext/ext-base.js"></script>
-<script type="text/javascript" src="lib/<%= $ext %>/ext-all.js"></script>
+<script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base.js"></script>
+<script type="text/javascript" src="lib/<%= ext_version %>/ext-all.js"></script>
 
 <!-- init JS -->
 <script type="text/javascript">

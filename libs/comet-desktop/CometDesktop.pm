@@ -69,7 +69,7 @@ sub startup {
     # template helper <%= ext_path %>
     # TBD get this from a config file
     $self->renderer->add_helper(
-        ext_path => sub { 'lib/ext-3.0.0' }
+        ext_version => sub { 'ext-3.1.0' }
     );
 
     $self->types->type( 'ogv' => 'video/ogg' );
