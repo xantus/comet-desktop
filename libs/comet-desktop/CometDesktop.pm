@@ -66,6 +66,8 @@ sub development_mode {
 sub startup {
     my $self = shift;
 
+    print "This is Mojo/$Mojo::VERSION\n";
+
     # template helper <%= ext_path %>
     # TBD get this from a config file
     $self->renderer->add_helper(
