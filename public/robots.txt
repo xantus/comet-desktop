@@ -3,7 +3,7 @@ Disallow: /brains
 
 User-agent: *
 Allow: /
-Allow: /login.html
+DisAllow: /login
 Disallow: /logout
 Disallow: /unload
 Disallow: /desktop
