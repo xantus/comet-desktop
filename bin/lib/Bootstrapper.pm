@@ -1,23 +1,41 @@
 package Bootstrapper;
 
+use strict;
+use warnings;
+
 use FindBin;
+use File::Spec;
+
+sub catfile {
+    return File::Spec->catfile( @_ );
+}
+
+my @configs;
 
 BEGIN {
     my $p = "$FindBin::Bin/..";
-    
-    foreach my $d ( "$p/libs", "$p/libs/plugins" ) {
-        opendir( my $dh, $d );
+
+    foreach my $d ( "/libs", "/libs/plugins" ) {
+        my $path = catfile( $p, $d );
+        opendir( my $dh, $path ) or die "could not opendir $path: $!";
         my @dirs = grep {
+            local $_ = catfile( $path, $_ );
             !/^\./ &&
             !/^plugins$/ &&
-            ( -d "$d/$_" || -l "$d/$_" )
-        } readdir( $dh );
+            ( -d || -l )
+        } readdir( $dh ) or die "could not readdir $path: $!";
         closedir( $dh );
 
         foreach ( sort { $a cmp $b } @dirs ) {
-            eval( "use lib \"$d/$_\";" );
-            eval( "use lib \"$d/$_/lib\";" ) if ( -d "$d/$_/lib" )
+            local $_ = catfile( $path, $_ );
+            my $lib = catfile( $_, 'lib' );
+            eval( qq|use lib "$_";| );
+            eval( qq|use lib "$lib";| ) if ( -d $lib );
+            push( @configs, $_ ) if ( -e catfile( $_, 'config.json' ) );
         }
+    }
+    foreach ( @configs ) {
+        # TODO
     }
 }
 
