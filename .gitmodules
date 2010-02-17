@@ -1,3 +1,6 @@
 [submodule "libs/mojo-origin"]
 	path = libs/mojo-origin
 	url = git://github.com/kraih/mojo.git
+[submodule "public/desktop/lib/web-socket-js"]
+	path = public/desktop/lib/web-socket-js
+	url = git://github.com/gimite/web-socket-js.git
