@@ -66,10 +66,12 @@ sub development_mode {
 sub startup {
     my $self = shift;
 
+    #$self->plugin( 'comet_desktop_media' );
+
     # template helper <%= ext_path %>
     # TBD get this from a config file
     $self->renderer->add_helper(
-        ext_version => sub { 'ext-3.1.0' }
+        ext_version => sub { 'ext-3.0.2' }
     );
 
     $self->types->type( 'ogv' => 'video/ogg' );
@@ -93,6 +95,8 @@ sub startup {
     $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
     
     $auth->route( '/' )->via('get')->to( 'auth#root' )->name( 'root' );
+
+    #$auth->route( '/websocket' )->websocket->to( 'auth#websocket' );
     
     return;
 }
