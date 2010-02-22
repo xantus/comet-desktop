@@ -4,13 +4,19 @@ Extjs Web Desktop
 TODO File
 
 
-Backend Rewrite
-Light and versatile. Keep the requirements down
+Backend
+--------
+websocket plugin
+long polling -> websocket plugin
+login and settings
 
+static handler with dir indexes
 
+Frontend
+--------
+fix window sidestep while maximized
+fix maximized windows + resize browser
+chrome like tabs and taskbar items
+switch out taskbar for panel
 
-Frontend Rewrite
-Gnome like.  Action bar on top, window bar on bottom
-
-
-
+jabber client
