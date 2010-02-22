@@ -17,27 +17,44 @@
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
-
 Ext.ns( 'CometDesktop' );
 Ext.ns( 'Apps' );
 
-window.app = {
-    id: function( x ) { return Ext.id( null, x ); }
-};
+Ext.apply( CometDesktop, {
+
+    idCounter: 1,
+
+    id: function( x ) {
+        return ( x || 'cd-gen' ) + (++CometDesktop.idCounter);
+    },
+
+    timing: [
+        [ 'begin', window.stNow || new Date() ],
+        [ 'load', new Date() ]
+    ],
+
+    time: function( name ) {
+        CometDesktop.timing.push( [ name, new Date() ] );
+    }
+
+});
+
+Ext.apply( window, {
+    app: CometDesktop
+});
 
 CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     isReady: false,
     modules: [],
     minimizeAll: true,
-    timing: [ [ 'extend', new Date() ] ],
     manifest: [
         'core/support.js',
-        'js/samples.js',
-        'js/html5video.js',
-        'js/googlewave.js'//,
-//        'js/media.js',
-//        'js/xmpp/client.js'//,
+        'js/samples.js'//,
+//        'plugins/tethys/media-manager.js'
+//        'js/html5video.js',
+//        'js/googlewave.js',
+//        'js/xmpp/client.js',
 //        'js/feed-reader/feed-reader.css',
 //        'js/feed-reader/feed-reader.js',
     ],
@@ -48,9 +65,11 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     constructor: function( config ) {
         window.app = this;
-        Ext.apply( this, config );
+        Ext.apply( this, CometDesktop, config );
 
         this.time( 'startup' ); // timing stats
+
+        this.logTiming();
 
         Ext.WindowMgr = this.wsManager = new CometDesktop.WorkspaceManager();
         this.keyManager = new CometDesktop.KeyManager();
@@ -119,6 +138,16 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         //    this.publish( '/desktop/system/notification', { html: '<span style="font-size:12px;font-weight:bold">channel:'+ch+'<br>event:'+Ext.encode( ev )+'</span>' } );
     },
 
+    logTiming: function() {
+        var timing = CometDesktop.timing;
+        var begin = timing[ 0 ][ 1 ].getTime();
+        for ( var i = 0, len = timing.length - 1; i < len; i++ ) {
+            var since = ( timing[ i ][ 1 ].getTime() - begin ) / 1000;
+            var ms = ( timing[ i + 1 ][ 1 ].getTime() - timing[ i ][ 1 ].getTime() ) / 1000;
+            log( timing[ i + 1 ][ 0 ] + ':' + ( Math.floor( ms * 10 ) / 10 ) + 'ms and '+( Math.floor( since * 10 ) / 10 )+' since start' )
+        }
+    },
+
     eventRegisterApp: function( ev ) {
         // defer early registrations until ready
         if ( !this.isReady )
@@ -141,6 +170,10 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             files: this.manifest,
             noCache: true,
             start: true,
+            itemHandler: function( item ) {
+                //this.publish( this.appChannel, Ext.apply( data, { action: 'file-loaded' } ) );
+                log('do something with basename',item);
+            },
             success: function() {
                 var i = 0;
                 Ext.each( this.modules, function( m ) {
@@ -186,10 +219,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         }, this);
         // XXX this allows it to toggle
         //this.minimizeAll = this.minimizeAll === false;
-    },
-
-    time: function( name ) {
-        this.timing.push( [ name, new Date() ] );
     },
 
     getModule: function( name ) {
@@ -267,7 +296,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             this.keyManager.register( win );
 
         win.taskButton = this.taskbar.addTaskButton( win );
-        win.animateTarget = win.taskButton.el;
+        if ( !win.animateTarget )
+            win.animateTarget = win.taskButton.el;
 
         win.on({
             activate: {
@@ -335,12 +365,12 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     windowOnShow: function( win ) {
-        win.manager.switchTo( win );
+        this.wsManager.switchTo( win );
         win.taskButton.show( null );
 
         // get all of the window positions in a simple x:y array
         var loc = [];
-        win.manager.each(function( w ) {
+        this.wsManager.each(function( w ) {
             // TBD maximized?
             if ( !w || !w.isVisible() || win === w )
                 return;
@@ -459,10 +489,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             this.wsManager.moveToCurrent( win );
             return win;
         }
-    },
-
-    id: function( x ) {
-        return Ext.id( null, x );
     },
 
     /* TBD nuke these? */
@@ -982,6 +1008,10 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'
                 }, '-', dateControl, '-', {
+                    id: 'websocketStatus',
+                    channel: '/desktop/system/websocket',
+                    iconCls: 'cd-icon-websocket-disconnected'
+                }, {
                     id: 'notificationArea',
                     iconCls: 'cd-icon-system-notification',
                     menu: [{
@@ -1220,6 +1250,10 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
         this.__fetcher.start();
     },
 
+    __loadedFile: function( data ) {
+        this.publish( this.appChannel, Ext.apply( data, { action: 'file-loaded' } ) );
+    },
+
     loadFiles: function( files ) {
         if ( Ext.isEmpty( files ) )
             return;
@@ -1230,6 +1264,7 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
             files: files,
             noCache: true,
             start: true,
+            itemHandler: this.__loadedFile,
             success: this.__loadSuccess,
             failure: this.__loadFailure,
             scope: this
@@ -1532,9 +1567,9 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
         this.active = true;
         var item = this.queue[ 0 ];
-        item.id = app.id( item.type + '-file-' );
         if ( !item.type )
             item.type = this.getType( item.file );
+        item.id = app.id( item.type + '-file-' );
 
         item.basedir = this.getBaseDir( item.file );
 
@@ -1581,11 +1616,18 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
         if ( item.file )
             log('file loaded:'+item.file);
 
+        if ( this.itemHandler ) {
+            if ( this.scope )
+                this.itemHandler.call( this.scope, item );
+            else
+                this.itemHandler( item );
+        }
+
         if ( item.callback ) {
             if ( item.scope )
-                item.callback.call( item.scope, this );
+                item.callback.call( item.scope, this, item );
             else
-                item.callback( this );
+                item.callback( this, item );
         }
 
         if ( item.type == 'js' )
@@ -1686,3 +1728,4 @@ CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
 });
 
 new CometDesktop.LoginApp();
+

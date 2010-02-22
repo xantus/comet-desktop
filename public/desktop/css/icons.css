@@ -159,4 +159,15 @@
     background-image: url(../images/icons/googlewave.ico) !important;
 }
 
+.cd-icon-websocket-connecting {
+    background-image: url(../images/icons/websocket/connecting.png) !important;
+}
+
+.cd-icon-websocket-connected {
+    background-image: url(../images/icons/websocket/connected.png) !important;
+}
+
+.cd-icon-websocket-disconnected {
+    background-image: url(../images/icons/websocket/disconnected.png) !important;
+}
 
