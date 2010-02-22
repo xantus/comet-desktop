@@ -6,7 +6,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 
-$ENV{MOJO_HOME} = "$FindBin::Bin/../" unless exists $ENV{MOJO_HOME};
+$ENV{MOJO_HOME} = "$FindBin::Bin/../";
 
 use Bootstrapper; # in bin/lib
 
