@@ -20,6 +20,9 @@
 <% } else { %>
 <!-- Google Chrome Frame is disabled -->
 <% } %>
+<script type="text/javascript">
+    var stNow = new Date();
+</script>
 
 <style type="text/css">
 #loading-mask {
@@ -59,9 +62,7 @@
 <!-- CSS -->
 <link rel="stylesheet" type="text/css" href="css/desktop.css" />
 <link rel="stylesheet" type="text/css" href="css/icons.css" />
-
 </head>
-
 <body scroll="no">
 <div id="loading-mask"></div>
 <div id="locked-status" style="display:none">
@@ -81,8 +82,13 @@
 <script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base.js"></script>
 <script type="text/javascript" src="lib/<%= ext_version %>/ext-all.js"></script>
 
+<script type="text/javascript" src="lib/web-socket-js/swfobject.js"></script>
+<script type="text/javascript" src="lib/web-socket-js/FABridge.js"></script>
+<script type="text/javascript" src="lib/web-socket-js/web_socket.js"></script>
+
 <!-- init JS -->
 <script type="text/javascript">
+    WebSocket.__swfLocation = "lib/web-socket-js/WebSocketMain.swf";
     Ext.BLANK_IMAGE_URL = 'images/s.gif';
 
     window.log = function() {};
@@ -115,21 +121,25 @@
 <script type="text/javascript" src="core/TaskBar.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
 
-<!-- Sample Apps, etc -->
+<!-- Everything else is on-demand -->
 
 <% if ($ga_account) { %>
     <!-- GA -->
     <script type="text/javascript">
-        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+        var gaJsHost = ( ( "https:" == document.location.protocol ) ? "https://ssl." : "http://www." );
+        document.write( unescape( "%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E" ) );
     </script>
     <script type="text/javascript">
-        if ( window._gat )
+        if ( window._gat ) {
             _gat._getTracker("<%= $ga_account %>")._trackPageview();
+        }
     </script>
 <% } else { %>
     <!-- GA Disabled -->
 <% } %>
 
+<script type="text/javascript">
+    app.time( 'pageload' );
+</script>
 </body>
 </html>
