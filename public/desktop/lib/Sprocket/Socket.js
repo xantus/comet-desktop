@@ -449,7 +449,7 @@ Ext.extend( Ext.ux.Sprocket.SocketManager, Ext.util.Observable, {
             return this.deferId = this.checkQueue.defer( this.backoff, this, [ 'warn' ] );
         }
 */
-        this.checkQueue( 'reponse' );
+        this.checkQueue( 'response' );
     },
     
                 
