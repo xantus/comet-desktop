@@ -12,17 +12,22 @@ use Bootstrapper; # in bin/lib
 use Mojolicious::Lite; # in libs/mojo
 use Mojo::JSON;
 
+BEGIN {
+    eval 'use JSON;';
+    eval 'sub HAS_JSON(){ '.( $@ ? 0 : 1 ).'}';
+};
+
 print "This is Mojo/$Mojo::VERSION home:$ENV{MOJO_HOME}\n";
 
 @ARGV = qw( daemon --listen http://*:3001 --lock=/tmp/event-bus.lock --pid=/tmp/event-bus.pid ) unless @ARGV;
 
-my $json = Mojo::JSON->new;
+my $json = HAS_JSON ? JSON->new : Mojo::JSON->new;
+
 my $clients = {};
 my $channels = {};
 
 sub CLIENT() { 0 }
 sub CHANNELS() { 1 }
-
 
 websocket '/' => sub {
     my $self = shift;
@@ -45,6 +50,27 @@ websocket '/' => sub {
     $self->receive_message( \&recv );
 
     $self->send_message( $json->encode( { channel => '/connect', cid => $cid } ) );
+};
+
+any '/event' => sub {
+    my $self = shift;
+
+    # where is the request body?
+    my $d = ( $self->param( 'data' ) || $self->req->content->asset->{content} ) or die 'data required';
+    my $data = $json->decode( $d );
+
+    die 'data not in correct format' unless ref $data;
+    warn "data:$data\n";
+
+    foreach ( @{ ref $data eq 'ARRAY' ? $data : [ $data ] } ) {
+        process( $_ );
+    }
+
+    $self->render_text('OK');
+};
+
+get '/favicon.ico' => sub {
+    shift->redirect_to( 'http://xant.us/favicon.ico' );
 };
 
 get '/' => sub {
@@ -102,21 +128,7 @@ sub unsub {
 
 #    return unless ( delete $clients->{ $id }->[ CHANNELS ]->{ $ch } );
 
-    my $c = $channels->{ $ch };
-
-    my $f;
-    for my $i ( 0 .. $#{$c} ) {
-        if ( $c->[ $i ] eq $id ) {
-            $f = $i;
-            last;
-        }
-    }
-    if ( defined $f ) {
-        warn "found idx $f, removing\n";
-        splice( @$c, $f, 1 );
-        delete $channels->{ $ch } unless @$c;
-    }
-
+    delete $channels->{ $ch }->{ $id };
     return;
 }
 
@@ -132,9 +144,9 @@ sub process {
             $clients->{ $id }->[ CHANNELS ]->{ $ch } = 1;
             warn "subscribing $id to $ch\n";
             if ( $channels->{ $ch } ) {
-                push( @{$channels->{ $ch }}, $id );
+                $channels->{ $ch }->{ $id } = 1;
             } else {
-                $channels->{ $ch } = [ $id ];
+                $channels->{ $ch } = { $id => 1 };
             }
         }
         return;
@@ -149,7 +161,7 @@ sub process {
     my $data = $json->encode( $msg );
     warn "delivering $data\n";
 
-    foreach my $cid ( @{ $channels->{ $ch } } ) {
+    foreach my $cid ( keys %{ $channels->{ $ch } } ) {
         next if ( $id eq $cid );
         warn "client for channel found: $cid\n";
         if ( my $cli = $clients->{ $cid } ) {
