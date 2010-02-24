@@ -12,6 +12,11 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
         this.subscribe( this.appChannel, this.eventReceived, this );
         // TODO add button item to the panel here instead of in base.js
         this.status = Ext.getCmp( 'websocketStatus' );
+        this.pingTask = {
+            run: this.doPing,
+            scope: this,
+            interval: ( 30 * 60 * 60 )
+        };
         this.connect();
     },
 
@@ -38,11 +43,8 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
     onOpen: function() {
         log("----------------onopen");
         this.setIcon( 'connected' );
-        Ext.TaskMgr.start({
-            run: this.doPing,
-            scope: this,
-            interval: ( 30 * 60 * 60 )
-        });
+        Ext.TaskMgr.stop( this.pingTask );
+        Ext.TaskMgr.start( this.pingTask );
         this.send([
             { channel: '/foo/bar', cmd: 'subscribe' },
             { channel: '/desktop/system/notification', cmd: 'subscribe' }
