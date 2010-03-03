@@ -1,5 +1,42 @@
-#!/bin/sh
+#!/usr/bin/env perl
+
+use FindBin;
+my $pwd = "$FindBin::Bin";
+
+unless ( -e "$pwd/libs/mojo-origin/Makefile.PL" ) {
+    print "Ok, something is wrong.\n";
+    if ( -d "$pwd/.git" ) {
+        print "You need to run 'git submodule update --init' to fetch Mojo\n";
+        print "(and other submodules) before you can run Comet Desktop.\n";
+    } else {
+        print "I'm guessing you downloaded Comet Desktop from github as a zip or tar\n";
+        print "You have two options, get Comet Desktop from github (see README), -OR-\n";
+        print "Download Mojo from http://github.com/kraih/mojo and unzip (or untar) it so that\n";
+        print "Makefile.PL and friends are in libs/mojo-origin/\n";
+    }
+    print "Thanks!\n";
+    exit;
+}
+
+unless ( -e "$pwd/public/desktop/lib/web-socket-js/WebSocketMain.swf" ) {
+    if ( -d "$pwd/.git" ) {
+        print "You need to run 'git submodule update --init' to fetch web-socket-js before you can run this.\n";
+        print "Odd thing though... you used git, and you have Mojo downloaded.\n";
+        print "You shouldn't see this msg unless something was screwed up....and it's probably my fault.\n";
+    } else {
+        print "I'm guessing you downloaded Comet Desktop from github as a zip or tar\n";
+        print "You have two options, get Comet Desktop from github (see README), -OR-\n";
+        print "Download web-socket-js from http://github.com/gimite/web-socket-js and unzip (or untar) it so that\n";
+        print "WebSocketMain.swf and friends are in public/desktop/lib/web-socket-js/\n";
+    }
+    print "Thanks!\n";
+    exit;
+}
+
 # default mode is development, and writes to log/development.log
 # production mode writes to log/production.log
-#MOJO_MODE=production
-MOJO_RELOAD=1 MOJO_LOADER_DEBUG=1 bin/desktop daemon --listen http://*:3000
+
+#$ENV{MOJO_MODE} = 'production';
+
+@ARGV = qw( daemon --listen http://*:3000 ) unless ( @ARGV );
+exec( 'bin/desktop', @ARGV );

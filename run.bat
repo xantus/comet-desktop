@@ -1,1 +1,1 @@
-perl bin\desktop
+perl ./run
