@@ -19,7 +19,11 @@ BEGIN {
 
 print "This is Mojo/$Mojo::VERSION home:$ENV{MOJO_HOME}\n";
 
-@ARGV = qw( daemon --listen http://*:3001 --lock=/tmp/event-bus.lock --pid=/tmp/event-bus.pid ) unless @ARGV;
+unless ( @ARGV ) {
+    @ARGV = qw( daemon --listen http://*:3001 );
+    push( @ARGV, "--lock=$FindBin::Bin/var/event-bus.lock" );
+    push( @ARGV, "--pid=$FindBin::Bin/var/event-bus.pid" );
+}
 
 my $json = HAS_JSON ? JSON->new : Mojo::JSON->new;
 

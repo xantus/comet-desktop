@@ -15,6 +15,8 @@ use Mojolicious; # in libs/mojo
 
 print "This is Mojo/$Mojo::VERSION\n";
 
+print "For WebSocket support, you need bin/event-bus and bin/flash-policy-server running also\n";
+
 # Start application
 use CometDesktop; # in libs/comet-desktop
 
