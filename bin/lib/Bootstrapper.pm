@@ -10,7 +10,8 @@ sub catfile {
     return File::Spec->catfile( @_ );
 }
 
-my @configs;
+# config files will be loaded during CometDesktop::startup()
+our @configs;
 
 BEGIN {
     my $p = "$FindBin::Bin/..";
@@ -29,13 +30,11 @@ BEGIN {
         foreach ( sort { $a cmp $b } @dirs ) {
             local $_ = catfile( $path, $_ );
             my $lib = catfile( $_, 'lib' );
+            my $conf = catfile( $_, 'plugin.conf' );
+            push( @configs, $conf ) if ( -e $conf );
             eval( qq|use lib '$_';| );
             eval( qq|use lib '$lib';| ) if ( -d $lib );
-            push( @configs, $_ ) if ( -e catfile( $_, 'config.json' ) );
         }
-    }
-    foreach ( @configs ) {
-        # TODO
     }
 }
 
