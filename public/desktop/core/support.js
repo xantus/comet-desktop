@@ -15,7 +15,7 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
         this.pingTask = {
             run: this.doPing,
             scope: this,
-            interval: ( 30 * 60 * 60 )
+            interval: ( 30 * 60 * 60 * 1000 )
         };
         this.connect();
     },
@@ -54,7 +54,7 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
     onMessage: function( ev ) {
         log("---------------onmessage: " + ev.data);
         var obj = Ext.decode( ev.data );
-        if ( obj.channel == '/connect' ) {
+        if ( obj.channel == '/meta/connect' ) {
             this.cid = obj.cid;
             //this.send({ channel: '/desktop/system/notification', html: 'Hi from ' + this.cid });
             log('-------------------client id:'+this.cid);
