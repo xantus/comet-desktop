@@ -11,13 +11,14 @@ $ENV{MOJO_HOME} = "$FindBin::Bin/../";
 use Bootstrapper; # in bin/lib
 use Mojolicious::Lite; # in libs/mojo
 use Mojo::JSON;
+#use Data::Dumper;
 
 BEGIN {
     eval 'use JSON;';
     eval 'sub HAS_JSON(){ '.( $@ ? 0 : 1 ).'}';
 };
 
-print "This is Mojo/$Mojo::VERSION home:$ENV{MOJO_HOME}\n";
+print "This is Mojo/$Mojo::VERSION\n";
 
 unless ( @ARGV ) {
     @ARGV = qw( daemon --listen http://*:3001 );
@@ -25,11 +26,12 @@ unless ( @ARGV ) {
     push( @ARGV, "--pid=$FindBin::Bin/var/event-bus.pid" );
 }
 
+# globals
 my $json = HAS_JSON ? JSON->new : Mojo::JSON->new;
-
 my $clients = {};
 my $channels = {};
 
+# constants
 sub CLIENT() { 0 }
 sub CHANNELS() { 1 }
 
@@ -38,22 +40,18 @@ websocket '/' => sub {
     my $id = scalar( $self->tx->connection );
     my ( $cid ) = $id =~ m/\(0x([^\)]+)\)/;
 
-    $clients->{ $cid } = [ $self, {} ];
+    $clients->{ $cid } = [
+        $self,  # CLIENT
+        {}      # CHANNELS
+    ];
 
-    require Data::Dumper;
-    print Data::Dumper->Dump([$channels]);
+#    print Data::Dumper->Dump([$channels],['channels']);
 
     warn "ws connect - $id is $cid\n";
 
-    my $hup = delete app->client->ioloop->{_connections}->{$id}->{hup};
-    app->client->ioloop->hup_cb( $id => sub { cleanup( $cid ); warn "ws disconnect - hup $id\n"; $hup->(@_); } );
-
-    my $error = delete app->client->ioloop->{_connections}->{$id}->{error};
-    app->client->ioloop->error_cb( $id => sub { cleanup( $cid ); warn "ws disconnect - error $id\n"; $error->(@_); } );
-
+    $self->finished( sub { cleanup( $cid ) } );
     $self->receive_message( \&recv );
-
-    $self->send_message( $json->encode( { channel => '/connect', cid => $cid } ) );
+    $self->send_message( $json->encode( { channel => '/meta/connect', cid => $cid } ) );
 };
 
 any '/event' => sub {
@@ -66,9 +64,7 @@ any '/event' => sub {
     die 'data not in correct format' unless ref $data;
     warn "data:$data\n";
 
-    foreach ( @{ ref $data eq 'ARRAY' ? $data : [ $data ] } ) {
-        process( $_ );
-    }
+    process( $_ ) foreach ( @{ ref $data eq 'ARRAY' ? $data : [ $data ] } );
 
     $self->render_text('OK');
 };
@@ -91,15 +87,14 @@ exit;
 sub cleanup {
     my $id = shift;
 
-    my $ch = $clients->{ $id }->[ CHANNELS ];
+    if ( my $ch = $clients->{ $id }->[ CHANNELS ] ) {
+        unsubscribe( $_, $id ) foreach ( keys %$ch );
+#        print Data::Dumper->Dump([$ch],["$id-channels"]);
+    }
 
-    unsub( $_, $id ) foreach ( keys %$ch );
-    
     delete $clients->{ $id };
     
     warn "cleanup of $id done:\n";
-    require Data::Dumper;
-    print Data::Dumper->Dump([$ch]);
 }
 
 sub recv {
@@ -107,32 +102,34 @@ sub recv {
 
     my ( $id ) = scalar( $self->tx->connection ) =~ m/\(0x([^\)]+)\)/;
 
-    warn "ws recv - $_[0]";
+    warn "ws recv ( $id ) - $_[0]";
     my $msg = $json->decode( $_[0] );
     return unless $msg && ref $msg eq 'ARRAY' || ref $msg eq 'HASH';
 
     foreach ( @{ ref $msg eq 'ARRAY' ? $msg : [ $msg ] } ) {
         $_->{from_cid} = $id;
-        if ( $_->{ping} ) {
-            $self->send_message( $json->encode( { pong => time() } ) );
-        }
+        $self->send_message( $json->encode( { pong => time() } ) ) if ( $_->{ping} );
         next unless ( $_->{channel} );
         process( $_, $id );
     }
 }
 
 
-sub unsub {
+sub unsubscribe {
     my ( $ch, $id ) = @_;
 
-    warn "unsub: $ch\n";
+    warn "unsubscribe: $ch\n";
     return unless $channels->{ $ch };
-    require Data::Dumper;
-    print Data::Dumper->Dump([$clients->{ $id }->[ CHANNELS ]]);
+
+#    print Data::Dumper->Dump([$clients->{ $id }->[ CHANNELS ]]);
 
 #    return unless ( delete $clients->{ $id }->[ CHANNELS ]->{ $ch } );
 
+    # remove the client from the channel
     delete $channels->{ $ch }->{ $id };
+    # clean up empty channels
+    delete $channels->{ $ch } unless keys %{ $channels->{ $ch } };
+
     return;
 }
 
@@ -156,7 +153,7 @@ sub process {
         return;
     } elsif ( $msg->{cmd} && $msg->{cmd} eq 'unsubscribe' ) {
         warn "unsubscribing $id to $ch\n";
-        unsub( $ch, $id );
+        unsubscribe( $ch, $id );
         return;
     }
     
