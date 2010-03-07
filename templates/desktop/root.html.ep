@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 % my $ga_account = $self->google_analytics_acct;
 % my $v = $self->desktop_version;
-% my $title = $self->stash( 'title' ) ? ' - '.$self->stash( 'title' ) : '';
+% $title ||= '';
 % my $chromeframe = $self->stash( 'disable_chromeframe' ) ? 0 : 1;
 <html lang="en">
 <head>

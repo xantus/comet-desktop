@@ -1,3 +1,4 @@
-% $self->stash( layout => 'wrapper', title => 'Welcome' );
+% layout 'wrapper';
+% $self->stash( title => 'Welcome' );
 
 Welcome, <%= $self->user->user_id %>. | <a href="/logout">Logout</a> 

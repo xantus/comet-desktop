@@ -1,29 +1,28 @@
 % if ($self->app->mode eq 'development') {
 % use Data::Dumper ();
 % my $s = $self->stash;
-% my $e = $s->{exception};
 % delete $s->{inner_template};
 <!html>
 <head><title>Exception</title></head>
     <body>
         This page was generated from the template
         "templates/exception.html.ep".
-        <pre><%= $e->message %></pre>
+        <pre><%= $exception->message %></pre>
         <pre>
-% for my $line (@{$e->lines_before}) {
+% for my $line (@{$exception->lines_before}) {
 <%= $line->[0] %>: <%== $line->[1] %>
 % }
-% if ($e->line->[0]) {
-<b><%= $e->line->[0] %>: <%== $e->line->[1] %></b>
+% if ($exception->line->[0]) {
+<b><%= $exception->line->[0] %>: <%== $exception->line->[1] %></b>
 % }
-% for my $line (@{$e->lines_after}) {
+% for my $line (@{$exception->lines_after}) {
 <%= $line->[0] %>: <%== $line->[1] %>
 % }
         </pre>
         <pre>
 % delete $s->{exception};
 %== Data::Dumper->new([$s])->Maxdepth(2)->Indent(1)->Terse(1)->Dump
-% $s->{exception} = $e;
+% $s->{exception} = $exception;
         </pre>
     </body>
 </html>
