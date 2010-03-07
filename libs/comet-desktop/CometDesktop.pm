@@ -28,10 +28,7 @@ sub process {
     }
 
     # database
-    # TBD, move this
-    #my $home = $self->home;
-    #my $dbh = DBI->connect( "dbi:SQLite:dbname=$home/db/main.db" )
-    my $dbh = DBI->connect( "dbi:mysql:desktop:localhost", 'root' )
+    my $dbh = DBI->connect( @{$config}{qw( db_interface db_user db_pass )} )
         or die 'DBI connect failed';
 
     # session
@@ -98,7 +95,7 @@ sub startup {
     }
 
     require Data::Dumper;
-    warn Data::Dumper->Dump([$config]);
+    warn Data::Dumper->Dump([$config],['config']);
 
     # template helper <%= ext_path %>
     # TBD get this from a config file
@@ -106,11 +103,11 @@ sub startup {
         ext_version => sub { 'ext-3.0.2' }
     );
 
-    $self->types->type( 'ogv' => 'video/ogg' );
-    $self->types->type( 'ogm' => 'video/ogg' );
-    #$self->types->type( 'ogg' => 'audio/ogg' );
-    $self->types->type( 'ogg' => 'application/ogg' );
-    $self->types->type( 'mp3' => 'audio/mpeg' );
+    if ( $config->{mojo_types} ) {
+        while( my ( $k, $v ) = each %{$config->{mojo_types}} ) {
+            $self->types->type( $k => $v );
+        }
+    }
 
     # Use our own controller
     $self->controller_class( 'CometDesktop::Controller' );
