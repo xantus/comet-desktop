@@ -9,7 +9,7 @@ use lib "$FindBin::Bin/lib";
 $ENV{MOJO_HOME} = "$FindBin::Bin/../";
 
 use Bootstrapper; # in bin/lib
-use Mojolicious::Lite; # in libs/mojo
+use Mojolicious::Lite; # in libs/mojo-origin
 use Mojo::JSON;
 #use Data::Dumper;
 

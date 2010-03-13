@@ -11,7 +11,7 @@ $ENV{MOJO_HOME} = "$FindBin::Bin/../";
 use Bootstrapper; # in bin/lib
 
 # Check if Mojo is installed
-use Mojolicious; # in libs/mojo
+use Mojolicious; # in libs/mojo-origin
 
 print "This is Mojo/$Mojo::VERSION\n";
 
