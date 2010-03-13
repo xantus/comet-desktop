@@ -2,10 +2,11 @@
 
 use FindBin;
 my $pwd = "$FindBin::Bin";
+my $fromgit = -d "$pwd/.git";
 
 unless ( -e "$pwd/libs/mojo-origin/Makefile.PL" ) {
     print "Ok, something is wrong.\n";
-    if ( -d "$pwd/.git" ) {
+    if ( $fromgit ) {
         print "You need to run 'git submodule update --init' to fetch Mojo\n";
         print "(and other submodules) before you can run Comet Desktop.\n";
     } else {
@@ -19,7 +20,7 @@ unless ( -e "$pwd/libs/mojo-origin/Makefile.PL" ) {
 }
 
 unless ( -e "$pwd/public/desktop/lib/web-socket-js/WebSocketMain.swf" ) {
-    if ( -d "$pwd/.git" ) {
+    if ( $fromgit ) {
         print "You need to run 'git submodule update --init' to fetch web-socket-js before you can run this.\n";
         print "Odd thing though... you used git, and you have Mojo downloaded.\n";
         print "You shouldn't see this msg unless something was screwed up....and it's probably my fault.\n";
