@@ -17,7 +17,7 @@ our $config = {};
 # This method will run for each request
 sub process {
     my ( $self, $c ) = @_;
-    
+
     # set the mojo version
     $c->res->headers->header( 'X-Powered-By' => 'Mojo/'.$Mojo::VERSION );
 
@@ -51,21 +51,17 @@ sub process {
 }
 
 sub production_mode {
-    my $self = shift;
-
-    $self->log->level( 'error' );
+    shift->log->level( 'error' );
 }
 
 sub development_mode {
-    my $self = shift;
-
-    $self->log->level( 'debug' );
+    shift->log->level( 'debug' );
 }
 
 # This method will run once at server start
 sub startup {
     my $self = shift;
-    
+
     $config = {};
 
     # merge config from plugins, and main one last
@@ -100,7 +96,7 @@ sub startup {
     # template helper <%= ext_path %>
     # TBD get this from a config file
     $self->renderer->add_helper(
-        ext_version => sub { 'ext-3.0.2' }
+        ext_version => sub { $config->{ext_version} }
     );
 
     if ( $config->{mojo_types} ) {
@@ -120,11 +116,11 @@ sub startup {
     $auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
 
     $auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
-    
+
     $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
-    
+
     $auth->route( '/' )->via('get')->to( 'auth#root' )->name( 'root' );
-    
+
     return;
 }
 
