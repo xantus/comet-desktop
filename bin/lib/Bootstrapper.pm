@@ -23,11 +23,12 @@ BEGIN {
             my $t = catfile( $path, $_ );
             !/^\./ &&
             !/^plugins$/ &&
+            !/^mojo-origin$/ &&
             ( -d $t || -l $t )
         } readdir( $dh ) or die "could not readdir $path: $!";
         closedir( $dh );
 
-        foreach ( sort { $a cmp $b } @dirs ) {
+        foreach ( "mojo-origin", sort { $a cmp $b } @dirs ) {
             local $_ = catfile( $path, $_ );
             my $lib = catfile( $_, 'lib' );
             my $conf = catfile( $_, 'plugin.conf' );
