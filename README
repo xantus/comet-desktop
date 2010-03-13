@@ -11,7 +11,16 @@ Mojo has a built-in web server, and supports CGI, and FastCGI
 Comet Desktop can run on almost anything, including Windows!
 (we dev on linux, so report any win32 issues :>)
 
-To start the standalone server:
+To start the event bus
+
+./bin/event-bus
+
+To start the flash policy server (for the flash based websocket)
+
+./bin/flash-policy-server
+
+
+To start the http server:
 
 ./run
 
@@ -29,6 +38,7 @@ Google Code at http://code.google.com/p/cometdesktop/
 To check out Comet Desktop from github:
 
 git clone git://github.com/kraih/mojo.git
+# THIS PART IS IMPORTANT
 git submodule update --init
 
 This will fetch Comet Desktop, and update the
