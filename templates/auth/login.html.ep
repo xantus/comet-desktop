@@ -1,14 +1,15 @@
 % layout 'wrapper';
 % $self->stash( title => 'Login' );
+% my $error = $self->stash( 'error_code' );
 <h3>Login</h3>
-<% if ( $error_code ) { %>
+<% if ( $error ) { %>
     <div style="color:red; font-weight:bold">
-    <% if ( $error_code eq 'INVALID' ) { %>
+    <% if ( $error eq 'INVALID' ) { %>
         Invalid username or password
-    <% } elsif ( $error_code eq 'REQUIRED' ) { %>
+    <% } elsif ( $error eq 'REQUIRED' ) { %>
         Username and password are required
     <% } else { %>
-        Error <%= $error_code %>
+        Error <%= $error %>
     <% } %>
     </div>
 <% } %>

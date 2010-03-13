@@ -9,7 +9,7 @@
 <title>&#x2604; Comet Desktop<%= $page_title %> [ v<%= $v %> ]</title>
 <meta http-equiv="generator" content="Mojolicious" />
 <meta http-equiv="imagetoolbar" content="no" />
-<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, websocket, sprocket, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
