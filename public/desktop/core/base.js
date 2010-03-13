@@ -50,8 +50,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     minimizeAll: true,
     manifest: [
         'core/support.js',
-        'js/samples.js'//,
-//        'plugins/tethys/media-manager.js'
+        'js/samples.js'
 //        'js/html5video.js',
 //        'js/googlewave.js',
 //        'js/xmpp/client.js',
@@ -368,44 +367,46 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.wsManager.switchTo( win );
         win.taskButton.show( null );
 
-        // get all of the window positions in a simple x:y array
-        var loc = [];
-        this.wsManager.each(function( w ) {
-            // TBD maximized?
-            if ( !w || !w.isVisible() || win === w )
-                return;
-            loc.push( w.getPosition().join(':') );
-        }, win );
+        if ( !win.maximized ) {
+            // get all of the window positions in a simple x:y array
+            var loc = [];
+            this.wsManager.each(function( w ) {
+                // TBD maximized?
+                if ( !w || !w.isVisible() || win === w )
+                    return;
+                loc.push( w.getPosition().join(':') );
+            }, win );
 
-        // compare the windows x:y until we find a window it won't directly overlap
-        var d = win.getBox();
-        var repos = false;
-        while ( loc.indexOf( d.x + ':' + d.y ) != -1 ) {
-            // window directly overlaps another, offset it by 24,24
-            d.x += 24; d.y += 24;
-            repos = true;
-        }
-        // shift the window and save the position when it is done
-        if ( repos ) {
-            // don't fire deactivate
-            win.el.disableShadow();
-            win.el.shift({
-                x: d.x,
-                y: d.y,
-                duration: .25,
-                callback: function() {
-                    this.setPagePosition( d.x, d.y );
-                    // don't fire activate again
-                    if ( !this.maximized )
-                        this.el.enableShadow( true );
-                },
-                scope: win
-            });
-        }
+            // compare the windows x:y until we find a window it won't directly overlap
+            var repos = false;
+            var d = win.getBox();
+            while ( loc.indexOf( d.x + ':' + d.y ) != -1 ) {
+                // window directly overlaps another, offset it by 24,24
+                d.x += 24; d.y += 24;
+                repos = true;
+            }
+            // shift the window and save the position when it is done
+            if ( repos ) {
+                // don't fire deactivate
+                win.el.disableShadow();
+                win.el.shift({
+                    x: d.x,
+                    y: d.y,
+                    duration: .25,
+                    callback: function() {
+                        this.setPagePosition( d.x, d.y );
+                        // don't fire activate again
+                        if ( !this.maximized )
+                            this.el.enableShadow( true );
+                    },
+                    scope: win
+                });
+            }
 
-        // fix an IE6 display bug
-        if ( Ext.isIE6 )
-            win.setWidth( d.width );
+            // fix an IE6 display bug
+            if ( Ext.isIE6 )
+                win.setWidth( d.width );
+        }
 
         // remove the listener because we only want win effect on first show
         win.un( 'show', app.windowOnShow, win );
@@ -531,8 +532,8 @@ Ext.onReady(function() {
 
 Ext.override( Ext.menu.BaseItem, {
 
-    constructor: function() {
-        Ext.menu.BaseItem.superclass.constructor.apply( this, arguments );
+    initComponent: function() {
+        Ext.menu.BaseItem.superclass.initComponent.apply( this, arguments );
 
         if ( this.channel && !this.handler ) {
             log('registered menu channel '+this.channel);
@@ -752,6 +753,11 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
     constructor: function( config ) {
         if ( !this.id )
             this.id = app.id( 'toolbar-' );
+        /*
+        if ( !Ext.isArray( this.plugins ) )
+            this.plugins = [];
+        this.plugins.push( new Ext.ux.ToolbarReorderer({ defaultReorderable: true }) );
+        */
         var appsMenu = new Ext.menu.Menu({
             id: 'appsMenu',
             style: {
@@ -983,6 +989,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: ' 1 ',
                     ws: 1,
                     enableToggle: true,
+                    reorderable: false,
                     toggleHandler: wsToggle,
                     pressed: true,
                     toggleGroup: 'ws-toggle'
@@ -991,6 +998,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: ' 2 ',
                     ws: 2,
                     enableToggle: true,
+                    reorderable: false,
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'
                 },
@@ -998,6 +1006,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: ' 3 ',
                     ws: 3,
                     enableToggle: true,
+                    reorderable: false,
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'
                 },
@@ -1005,6 +1014,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                     text: ' 4 ',
                     ws: 4,
                     enableToggle: true,
+                    reorderable: false,
                     toggleHandler: wsToggle,
                     toggleGroup: 'ws-toggle'
                 }, '-', dateControl, '-', {
