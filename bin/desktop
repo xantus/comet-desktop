@@ -17,6 +17,12 @@ print "This is Mojo/$Mojo::VERSION\n";
 
 print "For WebSocket support, you need bin/event-bus and bin/flash-policy-server running also\n";
 
+unless ( @ARGV ) {
+    @ARGV = qw( daemon --listen http://*:3000 );
+    push( @ARGV, "--lock=$FindBin::Bin/var/desktop.lock" );
+    push( @ARGV, "--pid=$FindBin::Bin/var/desktop.pid" );
+}
+
 # Start application
 use CometDesktop; # in libs/comet-desktop
 

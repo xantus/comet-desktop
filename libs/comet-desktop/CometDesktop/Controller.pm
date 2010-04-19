@@ -7,23 +7,24 @@ use base 'Mojolicious::Controller';
 
 use CometDesktop::User;
 
-__PACKAGE__->attr( json => sub { Mojo::JSON->new } );
-__PACKAGE__->attr( false => sub { Mojo::JSON->false } );
-__PACKAGE__->attr( true => sub { Mojo::JSON->true } );
+BEGIN {
+    # install JSON and JSON::XS if you can!
+    eval 'use JSON;';
+    eval ( $@ ? 'sub HAS_JSON(){ 0 }' : 'sub HAS_JSON(){ 1 }' );
+};
+
+__PACKAGE__->attr( json => HAS_JSON ? sub { JSON->new } : sub { Mojo::JSON->new } );
+__PACKAGE__->attr( false => HAS_JSON ? sub { JSON->false } : sub { Mojo::JSON->false } );
+__PACKAGE__->attr( true => HAS_JSON ? sub { JSON->true } : sub { Mojo::JSON->true } );
 
 __PACKAGE__->attr( session_secret => 'changeMe' );
-
 __PACKAGE__->attr( user => sub { CometDesktop::User->new } );
-
-__PACKAGE__->attr( desktop_version => '1234' );
-
+__PACKAGE__->attr( desktop_version => $CometDesktop::VERSION );
 __PACKAGE__->attr( session => sub { CometDesktop::Session->new } );
-
 __PACKAGE__->attr([qw/ db google_analytics_acct /]);
 
 sub new {
-    my $class = shift;
-    $class->SUPER::new( @_ );
+    shift->SUPER::new( @_ );
 }
 
 sub redirect {
@@ -35,23 +36,6 @@ sub redirect {
     );
 
     return;
-}
-
-# to be removed
-sub json_response {
-    my ( $self, $data, $jsonp ) = @_;
-
-    $self->res->code( 200 );
-
-    # or application/json; charset=UTF-8
-    $self->res->headers->content_type( $jsonp ? 'text/javascript+json' : 'text/javascript' );
-
-    my $out = $self->json->encode( $data );
-    warn Data::Dumper->Dump([$out],['data_out']);
-
-    $self->res->body( $jsonp ? $jsonp.'('.$out.');' : $out );
-
-    return 1;
 }
 
 sub get_cookie {
@@ -66,13 +50,11 @@ sub get_cookie {
 }
 
 sub json_encode {
-    my $self = shift;
-    return eval { $self->json->encode( @_ ); };
+    shift->json->encode( @_ );
 }
 
 sub json_decode {
-    my $self = shift;
-    return eval { $self->json->decode( @_ ); };
+    shift->json->decode( @_ );
 }
 
 # never use a cookie directly, verify it's good first
@@ -84,7 +66,7 @@ sub session_cookie {
         warn "session id doesn't match sha1/sha1 sid[$sid]" if ( defined $sid );
         return undef;
     }
-    
+
     my $check;
     ( $check, $sid ) = ( split( '/', $sid, 2 ) );
 

@@ -16,7 +16,7 @@ use Mojo::JSON;
 BEGIN {
     # install JSON and JSON::XS if you can!
     eval 'use JSON;';
-    eval 'sub HAS_JSON(){ '.( $@ ? 0 : 1 ).'}';
+    eval ( $@ ? 'sub HAS_JSON(){ 0 }' : 'sub HAS_JSON(){ 1 }' );
 };
 
 print "This is Mojo/$Mojo::VERSION\n";

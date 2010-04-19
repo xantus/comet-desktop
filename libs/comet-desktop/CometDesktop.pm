@@ -11,7 +11,7 @@ use Scalar::Util 'weaken';
 
 use base 'Mojolicious';
 
-our $VERSION = '0.01';
+our $VERSION = '2.01';
 our $config = {};
 
 # This method will run for each request
@@ -45,8 +45,6 @@ sub process {
 
     $c->db( $db );
 
-    $c->stash( config => $config );
-
     $self->dispatch( $c );
 }
 
@@ -55,6 +53,7 @@ sub production_mode {
 }
 
 sub development_mode {
+    # default mode
     shift->log->level( 'debug' );
 }
 
@@ -62,27 +61,17 @@ sub development_mode {
 sub startup {
     my $self = shift;
 
-    $config = {};
-
-    # merge config from plugins, and main one last
-    foreach (
-        $self->home.'/etc/comet-desktop.conf',
-        @Bootstrapper::configs
-    ) {
-        my $conf = $self->plugin( json_config => { file => $_ } );
-        while( my ( $k, $v ) = each( %$conf ) ) {
-            # merge 1st level
-            if ( ref( $v ) eq 'ARRAY' ) {
-                $config->{$k} = [] unless  $config->{$k};
-                push( @{$config->{$k}}, @$v );
-            } elsif ( ref( $v ) eq 'HASH' ) {
-                $config->{$k} = {} unless $config->{$k};
-                @{ $config->{$k} }{ keys %$v } = values %$v;
-            } else {
-                $config->{$k} = $v;
-            }
-        }
-    }
+    $config = $self->plugin( multi_config => {
+        files => [
+            'etc/comet-desktop.conf',
+            @Bootstrapper::configs
+        ],
+        config => {
+            mojo_plugins => [],
+            mojo_types => {},
+        },
+        stash_key => 'config'
+    });
 
     if ( $config->{mojo_plugins} ) {
         foreach( @{$config->{mojo_plugins}} ) {
@@ -92,6 +81,15 @@ sub startup {
 
     require Data::Dumper;
     warn Data::Dumper->Dump([$config],['config']);
+
+    # use our json encoder
+    $self->renderer->add_handler(
+        json => sub {
+            my ($r, $c, $output, $options) = @_;
+            # uses the faster JSON/JSON::XS encoder if available
+            $$output = $c->json_encode($options->{json});
+        }
+    );
 
     # template helper <%= ext_path %>
     # TBD get this from a config file

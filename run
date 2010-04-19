@@ -39,8 +39,6 @@ unless ( -e "$pwd/public/desktop/lib/web-socket-js/WebSocketMain.swf" ) {
 
 #$ENV{MOJO_MODE} = 'production';
 
-@ARGV = qw( daemon --listen http://*:3000 ) unless ( @ARGV );
-
 if ( $^O eq 'MSWin32' ) {
     exec( 'perl', "$pwd/bin/desktop", @ARGV );
 } else {

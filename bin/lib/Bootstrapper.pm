@@ -16,13 +16,12 @@ our @configs;
 BEGIN {
     my $p = "$FindBin::Bin/..";
 
-    foreach my $d ( "/libs", "/libs/plugins" ) {
+    foreach my $d ( "/libs", "/plugins" ) {
         my $path = catfile( $p, $d );
         opendir( my $dh, $path ) or die "could not opendir $path: $!";
         my @dirs = grep {
             my $t = catfile( $path, $_ );
             !/^\./ &&
-            !/^plugins$/ &&
             !/^mojo-origin$/ &&
             ( -d $t || -l $t )
         } readdir( $dh ) or die "could not readdir $path: $!";
