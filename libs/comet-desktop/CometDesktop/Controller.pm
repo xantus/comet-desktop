@@ -21,7 +21,7 @@ __PACKAGE__->attr( session_secret => 'changeMe' );
 __PACKAGE__->attr( user => sub { CometDesktop::User->new } );
 __PACKAGE__->attr( version => $CometDesktop::VERSION );
 __PACKAGE__->attr( session => sub { CometDesktop::Session->new } );
-__PACKAGE__->attr([qw/ db /]);
+__PACKAGE__->attr([qw/ db config /]);
 
 sub new {
     shift->SUPER::new( @_ );

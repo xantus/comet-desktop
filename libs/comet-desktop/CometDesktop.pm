@@ -18,6 +18,8 @@ our $config = {};
 sub process {
     my ( $self, $c ) = @_;
 
+    $c->config( $config );
+
     # set the mojo version
     $c->res->headers->header( 'X-Powered-By' => 'Mojo/'.$Mojo::VERSION );
 
