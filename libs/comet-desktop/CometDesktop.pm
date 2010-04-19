@@ -79,15 +79,17 @@ sub startup {
         }
     }
 
-    require Data::Dumper;
-    warn Data::Dumper->Dump([$config],['config']);
+    if ( $self->mode eq 'development' ) {
+        require Data::Dumper;
+        warn Data::Dumper->Dump([$config],['config']);
+    }
 
     # use our json encoder
     $self->renderer->add_handler(
         json => sub {
-            my ($r, $c, $output, $options) = @_;
+            my ( $r, $c, $output, $options ) = @_;
             # uses the faster JSON/JSON::XS encoder if available
-            $$output = $c->json_encode($options->{json});
+            $$output = $c->json_encode( $options->{json} );
         }
     );
 
@@ -112,12 +114,11 @@ sub startup {
     # TBD use method check in auth#login
     $auth->route( '/login' )->via( 'get' )->to( 'auth#login' )->name( 'login' );
     $auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
-
     $auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
-
     $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
 
     $auth->route( '/' )->via('get')->to( 'auth#root' )->name( 'root' );
+    $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
 
     return;
 }

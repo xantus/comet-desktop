@@ -19,9 +19,9 @@ __PACKAGE__->attr( true => HAS_JSON ? sub { JSON->true } : sub { Mojo::JSON->tru
 
 __PACKAGE__->attr( session_secret => 'changeMe' );
 __PACKAGE__->attr( user => sub { CometDesktop::User->new } );
-__PACKAGE__->attr( desktop_version => $CometDesktop::VERSION );
+__PACKAGE__->attr( version => $CometDesktop::VERSION );
 __PACKAGE__->attr( session => sub { CometDesktop::Session->new } );
-__PACKAGE__->attr([qw/ db google_analytics_acct /]);
+__PACKAGE__->attr([qw/ db /]);
 
 sub new {
     shift->SUPER::new( @_ );

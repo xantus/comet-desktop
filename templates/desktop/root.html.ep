@@ -1,24 +1,18 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-% my $ga_account = $self->google_analytics_acct;
-% my $v = $self->desktop_version;
+<!DOCTYPE HTML>
 % my $page_title = $self->stash( 'title' ) || '';
-% my $chromeframe = $self->stash( 'disable_chromeframe' ) ? 0 : 1;
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>&#x2604; Comet Desktop<%= $page_title %> [ v<%= $v %> ]</title>
+<title>&#x2604; Comet Desktop<%= $page_title %> [ v<%= $self->version %> ]</title>
 <meta http-equiv="generator" content="Mojolicious" />
 <meta http-equiv="imagetoolbar" content="no" />
-<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, websocket, sprocket, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, websocket, sprocket, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-<% if ( $chromeframe ) { %>
+<% if ( $config->{enable_chromeframe} ) { %>
 <!-- Google Chrome Frame for IE : http://code.google.com/chrome/chromeframe/ -->
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
-<!-- end -->
-<% } else { %>
-<!-- Google Chrome Frame is disabled -->
 <% } %>
 <script type="text/javascript">
     var stNow = new Date();
@@ -82,13 +76,28 @@
 <script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base.js"></script>
 <script type="text/javascript" src="lib/<%= ext_version %>/ext-all.js"></script>
 
+<script type="text/javascript">
+    // only load the flash fallback when needed
+    if ( !( 'WebSocket' in window ) ) {
+        document.write([
+            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/swfobject.js"></scr'+'ipt>',
+            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/FABridge.js"></scr'+'ipt>',
+            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/web_socket.js"></scr'+'ipt>'
+        ].join(''));
+    }
+</script>
+
 <script type="text/javascript" src="lib/web-socket-js/swfobject.js"></script>
 <script type="text/javascript" src="lib/web-socket-js/FABridge.js"></script>
 <script type="text/javascript" src="lib/web-socket-js/web_socket.js"></script>
 
 <!-- init JS -->
 <script type="text/javascript">
-    WebSocket.__swfLocation = "lib/web-socket-js/WebSocketMain.swf";
+    if ( WebSocket.__initialize ) {
+        // Set URL of your WebSocketMain.swf here:
+        WebSocket.__swfLocation = 'web-socket-js/WebSocketMain.swf';
+    }
+
     Ext.BLANK_IMAGE_URL = 'images/s.gif';
 
     window.log = function() {};
@@ -101,17 +110,14 @@
     }
 </script>
 
+<% if ( $config->{enable_chromeframe} ) { %>
 <!-- Google Chrome Frame http://code.google.com/chrome/chromeframe/ -->
 <script type="text/javascript">
-<% if ( $chromeframe ) { %>
     /* When Chrome Frame is on, it isn't IE so this doesn't load */
     if ( Ext.isIE )
         document.write(unescape("%3Cscript src='lib/chrome-frame/CFInstall.min.js' type='text/javascript'%3E%3C/script%3E"));
-<% } else { %>
-    if ( Ext.isIE || Ext.isChrome )
-        log('Google Chrome Frame is disabled');
-<% } %>
 </script>
+<% } %>
 
 <!-- PubSub and Window Snapping -->
 <script type="text/javascript" src="lib/Sprocket/PubSub.js"></script>
@@ -123,19 +129,19 @@
 
 <!-- Everything else is on-demand -->
 
-<% if ($ga_account) { %>
-    <!-- GA -->
-    <script type="text/javascript">
-        var gaJsHost = ( ( "https:" == document.location.protocol ) ? "https://ssl." : "http://www." );
-        document.write( unescape( "%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E" ) );
-    </script>
-    <script type="text/javascript">
-        if ( window._gat ) {
-            _gat._getTracker("<%= $ga_account %>")._trackPageview();
-        }
-    </script>
+<% if ( $config->{google_analytics_code} ) { %>
+<!-- GA -->
+<script type="text/javascript">
+    var gaJsHost = ( ( "https:" == document.location.protocol ) ? "https://ssl." : "http://www." );
+    document.write( unescape( "%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E" ) );
+</script>
+<script type="text/javascript">
+    if ( window._gat ) {
+        _gat._getTracker("<%= $config->{google_analytics_code} %>")._trackPageview();
+    }
+</script>
 <% } else { %>
-    <!-- GA Disabled -->
+<!-- GA Disabled -->
 <% } %>
 
 <script type="text/javascript">

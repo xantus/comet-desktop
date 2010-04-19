@@ -1,4 +1,5 @@
 # Copyright (C) 2008-2010, Sebastian Riedel.
+# Changes Copyright (C) 2010, David Davis.
 
 package MojoX::Dispatcher::Static;
 
@@ -44,7 +45,7 @@ sub serve {
     my ($self, $c, $rel) = @_;
 
     # Append path to root
-    my $path = File::Spec->catfile($self->root, split('/', $rel));
+    my $path = File::Spec->catfile($self->root, split('/', $rel || ''));
 
     # path is a directory, check for index files
     if (-d $path) {

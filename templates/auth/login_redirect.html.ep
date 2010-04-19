@@ -1,12 +1,10 @@
-% my $google_analytics_code = $self->google_analytics_acct;
-% my $v = $self->desktop_version;
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE HTML>
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>&#x2604; Comet Desktop - Web Desktop - JavaScript Desktop - Ext Desktop [ v<%= $v %> ]</title>
+<title>&#x2604; Comet Desktop - Web Desktop - JavaScript Desktop - Ext Desktop [ v<%= $self->version %> ]</title>
 <meta http-equiv="generator" content="Sprocket" />
-<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus, david davis" />
+<meta name="keywords" content="comet, desktop, web desktop, webos, web os, webtop, perl, javascript, sprocket, comet, mojo, mojolicious, extjs, ext, ajax, mtfnpy, xantus" />
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
 <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <style type="text/css">
@@ -25,7 +23,7 @@
         <h2>JavaScript Required</h2>
         Please enable JavaScript, and refresh this page.  You're really missing out!
     </noscript>
-<% if ($google_analytics_code) { %>
+<% if ( $config->{google_analytics_code} ) { %>
     <!-- GA -->
     <script type="text/javascript">
         var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
@@ -33,7 +31,7 @@
     </script>
     <script type="text/javascript">
         if ( window._gat )
-            _gat._getTracker("<%= $google_analytics_code %>")._trackPageview();
+            _gat._getTracker("<%= $config->{google_analytics_code} %>")._trackPageview();
     </script>
 <% } else { %>
     <!-- GA Disabled -->
