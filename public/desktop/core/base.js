@@ -50,7 +50,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     minimizeAll: true,
     manifest: [
         'core/support.js',
-        'js/samples.js'
+        'js/samples.js'//,
+//        '/apps/irc-example/js/irc-client.js'
 //        'js/html5video.js',
 //        'js/googlewave.js',
 //        'js/xmpp/client.js',
@@ -262,7 +263,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     /* window handling */
     createWindow: function( config, cls ) {
         tools = Ext.isArray( config.tools ) ? config.tools : [];
-        var win;
+        var win = null;
         /*
         tools.push({
             id: 'gear',
@@ -279,17 +280,17 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                     win.getTool( 'pin' ).show();
             }
         });
-        win = new ( cls || Ext.Window )(
-            Ext.applyIf( config || {}, {
-                tools: tools,
-                manager: this.wsManager,
-                //constrain: true,
-                constrainHeader: true,
-                animCollapse: true,
-                minimizable: true,
-                maximizable: true
-            })
-        );
+        var cfg = Ext.applyIf( config || {}, {
+            tools: tools,
+            manager: this.wsManager,
+            //constrain: true,
+            constrainHeader: true,
+            animCollapse: true,
+            minimizable: true,
+            maximizable: true
+        });
+
+        win = cls ? new ( cls )( cfg ) : Ext.create( cfg );
 
         if ( win.captureKeypress )
             this.keyManager.register( win );
@@ -509,6 +510,11 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
     getWinY: function( height ) {
         return ( this.desktop.el.getHeight() - height ) / 2;
+    },
+
+    websocketUrl: function( path ) {
+        var https = window.location.protocol.substr( -2, 1 ) == 's' ? true : false;
+        return 'ws' + ( https ? 's' : '' ) + '://' + window.location.host + ( path || '/' );
     }
 
 });

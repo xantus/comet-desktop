@@ -71,14 +71,28 @@ sub startup {
         config => {
             mojo_plugins => [],
             mojo_types => {},
+            cometdesktop_plugins => [],
         },
         stash_key => 'config'
     });
 
-    if ( $config->{mojo_plugins} ) {
-        foreach( @{$config->{mojo_plugins}} ) {
-            $self->plugin( $_, $config );
+    my $static = $self->plugin( static_fallback => $config );
+
+    foreach( @{$config->{mojo_plugins}} ) {
+        s/-/_/g;
+        next if ( $_ eq 'static_fallback' );
+        $self->plugin( $_, $config );
+    }
+
+    foreach( @{$config->{cometdesktop_apps}} ) {
+        warn "configuring app $_\n";
+        my $dir = $self->home->rel_dir( "apps/$_/public" );
+        if ( -d $dir ) {
+            warn "adding static fallback for /apps/$_/ to $dir\n";
+            $static->add( "/apps/$_/" => $dir );
         }
+        s/-/_/g;
+        $self->plugin( $_, $config );
     }
 
     if ( $self->mode eq 'development' ) {

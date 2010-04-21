@@ -5,12 +5,10 @@ use warnings;
 
 use base 'Mojolicious::Plugin';
 
+my @dispatchers;
+
 sub register {
     my ( $self, $app, $config ) = @_;
-
-    return unless @{ $config->{static_fallback} || [] };
-
-    my @dispatchers;
 
     foreach ( @{ $config->{static_fallback} || [] } ) {
         push( @dispatchers,
@@ -49,7 +47,33 @@ sub register {
             undef $default;
         }
     });
+ 
+    $app->renderer->add_helper(
+        static_fallback => sub {
+            push( @dispatchers,
+                MojoX::Dispatcher::Static->new(
+                    prefix => $_[0],
+                    root   => $_[1]
+                )
+            );
+            return;
+        }
+    );
 
+    return $self;
+}
+
+sub add {
+    my $self = shift;
+
+    push( @dispatchers,
+        MojoX::Dispatcher::Static->new(
+            prefix => $_[0],
+            root   => $_[1]
+        )
+    );
+
+    return $self;
 }
 
 1;

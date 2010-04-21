@@ -16,7 +16,7 @@ our @configs;
 BEGIN {
     my $p = "$FindBin::Bin/..";
 
-    foreach my $d ( "/libs", "/plugins" ) {
+    foreach my $d ( "/libs", "/plugins", "/apps" ) {
         my $path = catfile( $p, $d );
         opendir( my $dh, $path ) or die "could not opendir $path: $!";
         my @dirs = grep {
