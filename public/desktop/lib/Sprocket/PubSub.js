@@ -1,8 +1,8 @@
 /* Hierarchical PubSub for Extjs
  * Ext.ux.Sprocket.PubSub
- * Version: 2.0
+ * Version: 3.0
  * 
- * Copyright (c) 2008-2009 - David Davis, All Rights Reserved
+ * Copyright (c) 2008-2010 - David Davis, All Rights Reserved
  * xantus@xant.us
  * http://xant.us/
  *
@@ -32,32 +32,40 @@
  * Please do not remove this header
  */
 
-Ext.namespace('Ext.ux.Sprocket');
+(function() {
 
-Ext.override(Ext.util.Observable, {
+Ext.namespace( 'Ext.ux.Sprocket' );
+
+var singleton = null;
+
+Ext.override( Ext.util.Observable, {
 
     subscribe: function( eventName, fn, scope, o ) {
-        Ext.ux.Sprocket.PubSub.addEvents( eventName );
-        Ext.ux.Sprocket.PubSub.on( eventName, fn, scope, o);
+        singleton.addEvents( eventName );
+        singleton.on( eventName, fn, scope, o );
+
+        if ( !this.events )
+            this.events = {};
+
+        this.on( 'destroy', singleton.un.createDelegate( singleton, [ eventName, fn, scope, o ], false ) );
     },
 
     publish: function( eventName, event ) {
-        if ( Ext.ux.Sprocket.PubSub.eventsSuspended === true )
+        if ( singleton.eventsSuspended === true )
             return true;
-        if ( !Ext.ux.Sprocket.PubSub.events )
-            return false;
-        
+
         // a global event listener
-        var glob = Ext.ux.Sprocket.PubSub.events[ '*' ];
+        var glob = singleton.events[ '*' ];
         if ( glob )
             if ( glob.fire.call( glob, event, eventName ) === false )
                 return true;
 
         if ( eventName.substr( 0, 1 ) == '/' && eventName.length > 1 ) {
+            // Hierarchical
             var chans = eventName.substr( 1 ).split( '/' );
             var matched = false;
             for ( var i = 0, len = chans.length; i <= len; i++ ) {
-                var fn = Ext.ux.Sprocket.PubSub.events[ '/' + chans.slice( 0, i ).join( '/' ).toLowerCase() ];
+                var fn = singleton.events[ '/' + chans.slice( 0, i ).join( '/' ).toLowerCase() ];
                 if ( fn ) {
                     matched = true;
                     if ( fn.fire.call( fn, event, eventName ) === false )
@@ -66,7 +74,8 @@ Ext.override(Ext.util.Observable, {
             }
             return matched;
         } else {
-            var fn = Ext.ux.Sprocket.PubSub.events[ eventName.toLowerCase() ];
+            // Normal
+            var fn = singleton.events[ eventName.toLowerCase() ];
             if ( fn ) {
                 fn.fire.call( fn, event, eventName );
                 return true;
@@ -75,29 +84,37 @@ Ext.override(Ext.util.Observable, {
         return false;
     },
 
-    removeSubcribers: function( eventName ) {
-        for ( var evt in Ext.ux.Sprocket.PubSub.events ) {
-            if ( ( evt == eventName ) || ( !eventName ) ) {
-                var fn = Ext.ux.Sprocket.PubSub.events[ evt ];
-                if ( fn )
-                    Ext.ux.Sprocket.PubSub.events[ fn ].clearListeners();
-            }
+    // Removes subscribers, and the channel
+    removeSubscribers: function( eventName ) {
+        if ( eventName !== undefined ) {
+            eventName = eventName.toLowerCase();
+            var fn = singleton.events[ eventName ];
+            if ( fn )
+                fn.clearListeners();
+            delete singleton.events[ eventName ];
+        } else {
+            Ext.iterate( singleton.events, function( k, v, o ) {
+                v.clearListeners();
+                delete o[ k ];
+            });
         }
     }
 
 });
 
-Ext.ux.Sprocket.PubSub = new Ext.util.Observable();
+singleton = Ext.ux.Sprocket.PubSub = new Ext.util.Observable();
+singleton.events = {};
+
+})();
 
 
 /* Example: log all events
 
-if ( window.app ) {
     Ext.onReady(function() {
+        var app = new Ext.util.Observable();
         app.subscribe( '*', function(event, channel) {
-            window.console.log('event:'+channel,event);
+            console.log('event:'+channel,event);
         });
     });
-}
 
 */
