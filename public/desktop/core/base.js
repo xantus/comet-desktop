@@ -281,6 +281,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             }
         });
         var cfg = Ext.applyIf( config || {}, {
+            xtype: 'window',
             tools: tools,
             manager: this.wsManager,
             //constrain: true,
