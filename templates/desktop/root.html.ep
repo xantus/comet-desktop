@@ -73,8 +73,13 @@
 </div>
 
 <!-- ExtJS -->
+<% if ( $self->app->mode eq 'development' ) {  %>
+<script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base-debug.js"></script>
+<script type="text/javascript" src="lib/<%= ext_version %>/ext-all-debug.js"></script>
+<% } else { %>
 <script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base.js"></script>
 <script type="text/javascript" src="lib/<%= ext_version %>/ext-all.js"></script>
+<% } %>
 
 <script type="text/javascript">
     // only load the flash fallback when needed
