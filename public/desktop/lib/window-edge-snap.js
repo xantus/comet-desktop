@@ -114,10 +114,10 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
                 var halfh = this._box.right / 2;
                 halfv = this._box.bottom / 2;
                 if ( iPageY <= 0 && s[ 1 ] != halfv ) {
-                    this._halfmaxed.setSize(halfh, halfv, true);
+                    this._halfmaxed.setSize(halfh, halfv);
                 } else if ( iPageY >= this._box.bottom && s[ 1 ] != halfv || xy[ 1 ] != halfv ) {
                     if ( xy[ 1 ] != halfv )
-                        this._halfmaxed.setLocation(0, halfv, true);
+                        this._halfmaxed.setLocation(0, halfv);
                     this._halfmaxed.setSize(halfh, halfv, true);
                 } else if ( s[ 1 ] != this._box.bottom - this._box.y ) {
                     this._halfmaxed.setSize(halfh, this._box.bottom - this._box.y, true);
@@ -142,9 +142,9 @@ Ext.ux.WindowSnap.DD = Ext.extend( Ext.Window.DD, {
                 var halfh = this._box.right / 2;
                 halfv = this._box.bottom / 2;
                 if ( iPageY <= 0 && s[ 1 ] != halfv ) {
-                    this._halfmaxed.setSize(halfh, halfv, true);
+                    this._halfmaxed.setSize(halfh, halfv);
                 } else if ( s[ 1 ] != this._box.bottom - this._box.y ) {
-                    this._halfmaxed.setSize(halfh, this._box.bottom - this._box.y, true);
+                    this._halfmaxed.setSize(halfh, this._box.bottom - this._box.y);
                 }
             }
 /*
