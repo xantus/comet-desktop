@@ -129,6 +129,12 @@
 <script type="text/javascript" src="lib/window-edge-snap.js"></script>
 
 <!-- Desktop Core -->
+<script type="text/javascript">
+    Ext.ns( 'CometDesktop' );
+    Ext.apply( CometDesktop, {
+        mode: '<%= $self->app->mode  %>'
+    });
+</script>
 <script type="text/javascript" src="core/TaskBar.js"></script>
 <script type="text/javascript" src="core/base.js"></script>
 
