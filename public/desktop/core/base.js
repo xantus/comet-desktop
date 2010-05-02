@@ -49,15 +49,17 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     modules: [],
     minimizeAll: true,
     manifest: [
-        'core/support.js',
-        'js/samples.js'//,
+        'core/support.js'
+    ],
+
+//        'js/samples.js'//,
 //        '/apps/irc-example/js/irc-client.js'
 //        'js/html5video.js',
 //        'js/googlewave.js',
 //        'js/xmpp/client.js',
 //        'js/feed-reader/feed-reader.css',
 //        'js/feed-reader/feed-reader.js',
-    ],
+
     // XXX not sure I want to go this route
     channels: {
         registerApp: '/desktop/app/register'
@@ -92,6 +94,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                     region: 'center'
                 },{
                     id: 'cd-task-panel',
+                    border: false,
                     xtype: 'cd-task-panel',
                     region: 'south',
                     hidden: true
@@ -121,6 +124,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         this.subscribe( '/desktop/show', this.eventShowDesktop, this );
         this.subscribe( '/desktop/lock', this.eventLockDesktop, this );
+        this.subscribe( '/desktop/unlock', this.eventUnLockDesktop, this );
         this.subscribe( '/desktop/logout', this.eventLogout, this );
         this.subscribe( '/desktop/login', this.eventLogin, this );
 
@@ -129,7 +133,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.time( 'ready' );
 
         /* login app */
-        this.publish( '/desktop/system/login', { action: 'launch' } );
+        this.publish( '/desktop/app/login', { action: 'launch' } );
     },
 
     logEvents: function( ev, ch ) {
@@ -161,13 +165,22 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.modules.push( ev );
     },
 
-    eventLogin: function() {
+    eventLogin: function( ev ) {
         Ext.getCmp( 'cd-top-toolbar' ).show();
         Ext.getCmp( 'cd-task-panel' ).show();
         this.viewport.doLayout();
 
+        var manifest = this.manifest;
+
+        if ( ev.res && ev.res.data ) {
+            if ( ev.res.data.load )
+                manifest = manifest.concat( ev.res.data.load );
+            if ( ev.res.data.nickname )
+               Ext.getCmp( 'system-user-menu' ).setText( ev.res.data.nickname );
+        }
+
         new CometDesktop.FileFetcher({
-            files: this.manifest,
+            files: manifest,
             noCache: true,
             start: true,
             itemHandler: function( item ) {
@@ -193,7 +206,22 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     },
 
     eventLogout: function() {
-        window.location = '../logout';
+        Ext.Ajax.request({
+            method: 'POST',
+            url: 'logout',
+            success: function( r ) {
+                var data = app.decodeResponse( r );
+                if ( data.success )
+                    window.location.reload();
+                else if ( data.error )
+                    Ext.MesageBox.alert( 'Error', data.error );
+                else
+                    Ext.MesageBox.alert( 'Error '+r.status, r.statusText );
+            },
+            failure: function( r ) {
+                Ext.MesageBox.alert( 'Error '+r.status, r.statusText );
+            }
+        });
     },
 
     eventLockDesktop: function() {
@@ -202,6 +230,17 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             duration: 1.5,
             callback: function() {
                 Ext.fly( 'locked-status' ).fadeIn({ duration: 1 });
+            }
+        });
+    },
+
+    eventUnLockDesktop: function() {
+        // TBD, unlock, etc
+        Ext.fly( 'loading-mask' ).fadeIn({
+            duration: 1.5,
+            callback: function() {
+                Ext.fly( 'locked-status' ).fadeIn({ duration: 1 });
+                
             }
         });
     },
@@ -271,15 +310,17 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             handler: function() { log('gear'); }
         });
         */
-        tools.push({
-            id: 'pin',
-            hidden: true,
-            handler: function() {
-                win.pinned = ( win.pinned ) ? false : true;
-                if ( win.pinned )
-                    win.getTool( 'pin' ).show();
-            }
-        });
+        if ( !config.noPin ) {
+            tools.push({
+                id: 'pin',
+                hidden: true,
+                handler: function() {
+                    win.pinned = ( win.pinned ) ? false : true;
+                    if ( win.pinned )
+                        win.getTool( 'pin' ).show();
+                }
+            });
+        }
         var cfg = Ext.applyIf( config || {}, {
             xtype: 'window',
             tools: tools,
@@ -320,7 +361,8 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                 fn: this.windowRenderFix
             },
             show: {
-                fn: this.windowOnShow
+                fn: this.windowOnShow,
+                single: true
             },
             iconchange: {
                 fn: this.windowIconChange
@@ -410,48 +452,47 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                 win.setWidth( d.width );
         }
 
-        // remove the listener because we only want win effect on first show
-        win.un( 'show', app.windowOnShow, win );
-
-        win.header.hover( function() {
-            if ( this._hoverOutTask ) {
-                this._hoverOutTask.cancel();
-                this._hoverOutTask = null;
-            }
-            if ( !this._hoverTask )
-                this._hoverTask = new Ext.util.DelayedTask( function() {
-                    this._hoverTask = null;
-                    Ext.iterate( this.tools, function( x ) {
-                        if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
-                            return;
-                        if ( x == 'pin' && this.pinned )
-                            return;
-                        try {
-                            this.tools[ x ].stopFx().fadeIn( { duration: .5 } );
-                        } catch(e){};
-                    }, this );
-                }, this );
-            this._hoverTask.delay( 500 );
-        }, function() {
-            if ( this._hoverTask ) {
-                this._hoverTask.cancel();
-                this._hoverTask = null;
-            }
-            if ( !this._hoverOutTask )
-                this._hoverOutTask = new Ext.util.DelayedTask( function() {
+        if ( !win.noPin ) {
+            win.header.hover( function() {
+                if ( this._hoverOutTask ) {
+                    this._hoverOutTask.cancel();
                     this._hoverOutTask = null;
-                    Ext.iterate( this.tools, function( x ) {
-                        if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
-                            return;
-                        if ( x == 'pin' && this.pinned )
-                            return;
-                        try {
-                            this.tools[ x ].stopFx().fadeOut( { duration: .3 } );
-                        } catch(e){};
+                }
+                if ( !this._hoverTask )
+                    this._hoverTask = new Ext.util.DelayedTask( function() {
+                        this._hoverTask = null;
+                        Ext.iterate( this.tools, function( x ) {
+                            if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
+                                return;
+                            if ( x == 'pin' && this.pinned )
+                                return;
+                            try {
+                                this.tools[ x ].stopFx().fadeIn( { duration: .5 } );
+                            } catch(e){};
+                        }, this );
                     }, this );
-                }, this );
-            this._hoverOutTask.delay( 700 );
-        }, win );
+                this._hoverTask.delay( 500 );
+            }, function() {
+                if ( this._hoverTask ) {
+                    this._hoverTask.cancel();
+                    this._hoverTask = null;
+                }
+                if ( !this._hoverOutTask )
+                    this._hoverOutTask = new Ext.util.DelayedTask( function() {
+                        this._hoverOutTask = null;
+                        Ext.iterate( this.tools, function( x ) {
+                            if ( /^(minimize|maximize|restore|close|toggle)$/.test( x ) )
+                                return;
+                            if ( x == 'pin' && this.pinned )
+                                return;
+                            try {
+                                this.tools[ x ].stopFx().fadeOut( { duration: .3 } );
+                            } catch(e){};
+                        }, this );
+                    }, this );
+                this._hoverOutTask.delay( 700 );
+            }, win );
+        }
 
         win.header.on( 'click', win.taskButton.contextMenu, win.taskButton );
         win.header.on( 'contextmenu', win.taskButton.contextMenu, win.taskButton );
@@ -516,6 +557,13 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     websocketUrl: function( path ) {
         var https = window.location.protocol.substr( -2, 1 ) == 's' ? true : false;
         return 'ws' + ( https ? 's' : '' ) + '://' + window.location.host + ( path || '/' );
+    },
+
+    decodeResponse: function( r ) {
+        var data = ( r.responseText.substr( 0, 1 ) == '{' )
+            ? Ext.decode( r.responseText ) : Ext.copyTo( { success: false }, r, 'responseText,status,statusText' );
+        log(data);
+        return data;
     }
 
 });
@@ -878,8 +926,7 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
         var checkHandler = function( item, checked ) {
             if ( checked ) {
                 Ext.getCmp( 'system-user-menu' ).setIconClass( item.iconCls );
-                var status = item.iconCls.match( /status-(.*)/ )[ 1 ];
-                this.publish( '/desktop/user/status', { action: 'status', status: status } );
+                this.publish( '/desktop/user/status', { action: 'change', status: item.status } );
             }
         };
 
@@ -892,30 +939,35 @@ CometDesktop.ToolPanel = Ext.extend( Ext.Toolbar, {
                 {
                     text: 'Available',
                     iconCls: 'cd-icon-user-status-available',
+                    status: 'available',
                     checked: true,
                     group: 'status',
                     checkHandler: checkHandler
                 }, {
                     text: 'Away',
                     iconCls: 'cd-icon-user-status-away',
+                    status: 'away',
                     checked: false,
                     group: 'status',
                     checkHandler: checkHandler
                 }, {
                     text: 'Busy',
                     iconCls: 'cd-icon-user-status-busy',
+                    status: 'busy',
                     checked: false,
                     group: 'status',
                     checkHandler: checkHandler
                 }, {
                     text: 'Invisible',
                     iconCls: 'cd-icon-user-status-invisible',
+                    status: 'invisible',
                     checked: false,
                     group: 'status',
                     checkHandler: checkHandler
                 }, {
                     text: 'Offline',
                     iconCls: 'cd-icon-user-status-offline',
+                    status: 'offline',
                     checked: false,
                     group: 'status',
                     checkHandler: checkHandler
@@ -1686,20 +1738,101 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 /* Start the main desktop app */
 new CometDesktop.App();
 
+CometDesktop.localeStore = new Ext.data.SimpleStore({
+    fields: [ 'locale', 'english', 'lang' ],
+    data: [
+        [ 'en_US', 'English', 'United States' ],
+        [ 'en_UK', 'English', 'United Kingdom' ],
+        [ 'es_MX', 'Spanish', 'Español' ],
+        [ 'fr_FR', 'French', 'Français' ],
+        [ 'de_DE', 'German', 'Deutsch' ],
+        [ 'ru_RU', 'Russian', 'Русский' ],
+        [ 'it_IT', 'Italian', 'Italiano' ],
+        [ 'pt_BR', 'Brazilian Portuguese', 'Português Brasileiro' ],
+        [ 'ko_KR', 'Korean', '한국어' ],
+        [ 'ja_JP', 'Japanese', '日本語' ],
+        [ 'zh_CN', 'Chinese', '中文' ]
+    ]
+});
+
+CometDesktop.menu.LocaleMenu = Ext.extend( CometDesktop.menu.StoreMenu, {
+
+    constructor: function() {
+        var locale = Ext.util.Cookies.get( 'locale' );
+        this.locale = ( locale ) ? locale : 'en_US';
+        this.store = CometDesktop.localeStore;
+        CometDesktop.menu.LocaleMenu.superclass.constructor.apply( this, arguments );
+        this.local = true;
+        this.loaded = true;
+    },
+
+    updateMenu: function( records ) {
+        this.removeAll();
+        this.el.sync();
+
+        Ext.each( records, function( rec ) {
+            this.add({
+                xtype: 'menucheckitem',
+                text: String.format( '{0} ({1})', rec.data.english, rec.data.lang ),
+                checked: ( this.locale == rec.data.locale ),
+                locale: rec.data.locale,
+                group: 'lang',
+                checkHandler: this.langChange,
+                scope: this
+            });
+        }, this);
+    },
+
+    _onShow: function() {
+        this.updateMenu( this.store.getRange() );
+        this.un( 'show', this._onShow, this );
+    },
+
+    langChange: function( item, checked ) {
+        if ( !checked )
+            return;
+        this.locale = item.locale;
+        Ext.util.Cookies.set( 'locale', this.locale, ( new Date() ).add( Date.YEAR, 1 ), location.pathname );
+    }
+
+});
+
 /* -------------------------------------------------------------------------*/
 
 CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
 
-    appChannel: '/desktop/system/login',
+    appChannel: '/desktop/app/login',
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
+        this.menu = new Ext.menu.Menu({
+            items: [{
+                xtype: 'menuitem',
+                text: 'Language',
+                iconCls: 'cd-icon-system-admin-locale',
+                menu: new CometDesktop.menu.LocaleMenu()
+            }]
+        });
     },
 
-    eventReceived: function() {
-        /* skip the login window */
-        this.publish( '/desktop/login', { action: 'login' } );
-        //this.createWindow();
+    eventReceived: function( ev ) {
+        if ( ev.action != 'launch' )
+            return;
+        Ext.Ajax.request({
+            method: 'POST',
+            url: 'login',
+            success: function( r ) {
+                var data = app.decodeResponse( r );
+                if ( data.success )
+                    this.publish( '/desktop/login', { res: data } );
+                else
+                    this.openLogin( data );
+            },
+            failure: function( r ) {
+                this.openLogin( app.decodeResponse( r ) );
+            },
+            scope: this
+        });
     },
 
     createWindow: function() {
@@ -1707,38 +1840,154 @@ CometDesktop.LoginApp = Ext.extend( CometDesktop.Module, {
         if ( !win )
             win = this.create();
         win.show();
+        return win;
+    },
+
+    checkAuth: function() {
+        var win = app.getWindow( 'desktop-login-win' );
+        var user = win.find( 'name', 'username' )[ 0 ].getValue();
+        var pass = win.find( 'name', 'password' )[ 0 ];
+        var password = pass.getValue(); pass.reset();
+        if ( this.token ) {
+            password = app.sha1_hex( this.token + ':' + password );
+        }
+        win.body.mask();
+        Ext.Ajax.request({
+            method: 'POST',
+            url: 'login',
+            params: {
+                token: this.token || '',
+                username: user,
+                password: password
+            },
+            success: function( r ) {
+                var data = app.decodeResponse( r );
+                if ( data.success )
+                    this.loginSuccess( data );
+                else
+                    this.loginFailure( data );
+            },
+            failure: function( r ) {
+                this.loginFailure( app.decodeResponse( r ) );
+            },
+            scope: this
+        });
+    },
+
+    loginSuccess: function( data ) {
+        app.getWindow( 'desktop-login-win' ).close();
+        this.publish( '/desktop/login', { res: data } );
+    },
+
+    openLogin: function( data ) {
+        if ( data.token )
+            this.token = data.token;
+        if ( data.token )
+            this.username = data.username;
+        this.createWindow();
+    },
+
+    loginFailure: function( data ) {
+        if ( data.token )
+            this.token = data.token;
+        var win = this.createWindow();
+        win.body.unmask();
+        win.getLayout().setActiveItem( 0 );
+        if ( !win.el.hasActiveFx() ) {
+            var x = win.el.getX();
+            win.el.disableShadow();
+            win.el.sequenceFx();
+            win.el.shift({ x: x-10, duration: .1 });
+            win.el.shift({ x: x+10, duration: .1 });
+            win.el.shift({ x: x, duration: .1, callback: function() { this.enableShadow( true ); }, scope: win.el });
+        }
     },
 
     create: function() {
         return app.createWindow({
             id: 'desktop-login-win',
+            noPin: true,
             title: 'Comet Desktop - Login',
             iconCls: 'cd-icon-system-login',
             width: 250,
-            height: 150,
-            layout: 'fit',
+            height: 100,
             maximizable: false,
             minimizable: false,
             closable: false,
-            preventBodyReset: true,
-            items: [
-                {
-                    html: ['<div style="padding:10px 10px 10px 10px;"><h2>Login</h2>Click Ok.</div>'].join('')
+            layout: 'card',
+            activeItem: 0,
+            items: [{
+                layout: 'form',
+                padding: 10,
+                labelAlign: 'top',
+                defaults: {
+                    anchor: '100%'
+                },
+                items: [{
+                    xtype: 'textfield',
+                    name: 'username',
+                    fieldLabel: 'Username',
+                    selectOnFocus: true,
+                    value: this.username || '',
+                    listeners: {
+                        specialkey: function( field, e ) {
+                            if ( e.getKey() == e.ENTER || e.getKey() == e.TAB )
+                                app.getWindow( 'desktop-login-win' ).getLayout().setActiveItem( 1 );
+                        }
+                    }
+                }],
+                listeners: {
+                    activate: function() {
+                       this.find( 'name', 'username' )[ 0 ].el.focus();
+                    }
                 }
-            ],
-            buttonAlign: 'center',
-            buttons: [{
-                text: 'Ok',
-                handler: function() {
-                    var win = app.getWindow( 'desktop-login-win' );
-                    win.close();
-                    //win.setActive( false );
-                    //win.el.fadeOut({ duration: 1.5, callback: win.close, scope: win });
-
-                    this.publish( '/desktop/login', { action: 'login' } );
+            }, {
+                layout: 'form',
+                padding: 10,
+                labelAlign: 'top',
+                defaults: {
+                    anchor: '100%'
+                },
+                items: [{
+                    xtype: 'textfield',
+                    name: 'password',
+                    fieldLabel: 'Password',
+                    inputType: 'password',
+                    listeners: {
+                        specialkey: function( field, e ) {
+                            var key = e.getKey();
+                            if ( key == e.TAB )
+                                e.stopEvent();
+                            if ( key == e.ENTER || key == e.TAB ) {
+                                if ( field.getValue().trim().length > 0 )
+                                    this.checkAuth();
+                            }
+                        },
+                        scope: this
+                    }
+                }],
+                listeners: {
+                    activate: function() {
+                       this.find( 'name', 'password' )[ 0 ].el.focus();
+                    }
+                }
+            }],
+            tools: [{
+                id: 'gear',
+                handler: function( ev, toolEl ) {
+                    this.menu.show( toolEl );
                 },
                 scope: this
-            }]
+            }],
+            listeners: {
+                activate: function() {
+                    var el = this.find( 'name', 'username' )[ 0 ].el;
+                    el.focus.defer( 200, el );
+                },
+                show: function() {
+                    this.getLayout().setActiveItem( 0 );
+                }
+            }
         });
     }
 

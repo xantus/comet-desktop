@@ -6,10 +6,11 @@ use warnings;
 use base 'Mojolicious::Controller';
 
 use CometDesktop::User;
+use Digest::SHA1();
 
 BEGIN {
     # install JSON and JSON::XS if you can!
-    eval 'use JSON;';
+    eval 'use JSON();';
     eval ( $@ ? 'sub HAS_JSON(){ 0 }' : 'sub HAS_JSON(){ 1 }' );
 };
 
@@ -17,10 +18,9 @@ __PACKAGE__->attr( json => HAS_JSON ? sub { JSON->new } : sub { Mojo::JSON->new 
 __PACKAGE__->attr( false => HAS_JSON ? sub { JSON->false } : sub { Mojo::JSON->false } );
 __PACKAGE__->attr( true => HAS_JSON ? sub { JSON->true } : sub { Mojo::JSON->true } );
 
-__PACKAGE__->attr( session_secret => 'changeMe' );
 __PACKAGE__->attr( user => sub { CometDesktop::User->new } );
-__PACKAGE__->attr( version => $CometDesktop::VERSION );
-__PACKAGE__->attr( session => sub { CometDesktop::Session->new } );
+__PACKAGE__->attr( version => sub { $CometDesktop::VERSION } );
+__PACKAGE__->attr( session_store => sub { CometDesktop::Session->new } );
 __PACKAGE__->attr([qw/ db config /]);
 
 sub new {
@@ -57,32 +57,10 @@ sub json_decode {
     shift->json->decode( @_ );
 }
 
-# never use a cookie directly, verify it's good first
-sub session_cookie {
-    my $self = shift;
-    my $sid = $self->get_cookie( 'sessionId' );
-
-    unless ( defined $sid && $sid =~ m/^[a-f0-9]{40}\/[a-f0-9]{40}$/ ) {
-        warn "session id doesn't match sha1/sha1 sid[$sid]" if ( defined $sid );
-        return undef;
-    }
-
-    my $check;
-    ( $check, $sid ) = ( split( '/', $sid, 2 ) );
-
-    my $code;
-#    if ( $self->extra_security ) {
-#        $code = sha1_hex( $sid.':'.$self->session_secret.':'.( $ENV{HTTP_USER_AGENT} || '' ) );
-#    } else {
-        $code = sha1_hex( $sid.':'.$self->session_secret );
-#    }
-
-    unless ( $code eq $check ) {
-        warn "session $sid doesn't pass token check against $check";
-        return undef;
-    }
-
-    return $sid;
+sub sha1_hex {
+    shift;
+    return Digest::SHA1::sha1_hex( @_ );
 }
+
 
 1;

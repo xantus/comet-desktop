@@ -34,7 +34,7 @@ sub process {
         or die 'DBI connect failed';
 
     # session
-    $c->session->tx( $c->tx )->store->dbh( $dbh );
+    $c->session_store->tx( $c->tx )->store->dbh( $dbh );
 
     # dbix
     my $db = DBIx::Simple->connect( $dbh )
@@ -121,20 +121,24 @@ sub startup {
         }
     }
 
+    $self->secret( $config->{mojo_session_secret} )
+        if ( $config->{mojo_session_secret} );
+
     # Use our own controller
     $self->controller_class( 'CometDesktop::Controller' );
 
     # Auth Bridge
-    my $auth = $self->routes->bridge->to( 'auth#auth' );
+    #my $auth = $self->routes->bridge->to( 'auth#auth' );
 
     # TBD use method check in auth#login
-    $auth->route( '/login' )->via( 'get' )->to( 'auth#login' )->name( 'login' );
-    $auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
-    $auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
-    $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
+    #$auth->route( '/login' )->via( 'get' )->to( 'auth#login' )->name( 'login' );
+    #$auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
+    #$auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
 
-    $auth->route( '/' )->via('get')->to( 'auth#root' )->name( 'root' );
-    $auth->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
+    $self->routes->route( '/' )->via( 'get' )->to( cb => sub { shift->redirect_to( '/desktop' ); } );
+    $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
+    $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
+    $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
 
     return;
 }
