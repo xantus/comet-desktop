@@ -65,6 +65,9 @@
 <div id="loading">
     <div class="loading-indicator"> Loading....</div>
 </div>
+<% if ( $self->app->mode eq 'development' ) { %>
+<div style="position: fixed; left: 0pt; bottom: 29px;">DEV MODE</div>
+<% } %>
 
 <div id="ux-taskbar">
     <div id="ux-taskbar-start"><div id="ux-show-desktop-button"></div></div>
@@ -76,33 +79,23 @@
 <% if ( $self->app->mode eq 'development' ) {  %>
 <script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base-debug.js"></script>
 <script type="text/javascript" src="lib/<%= ext_version %>/ext-all-debug.js"></script>
+<script type="text/javascript" src="lib/ext-basex/jitx-debug.js"></script>
 <% } else { %>
 <script type="text/javascript" src="lib/<%= ext_version %>/adapter/ext/ext-base.js"></script>
 <script type="text/javascript" src="lib/<%= ext_version %>/ext-all.js"></script>
+<script type="text/javascript" src="lib/ext-basex/jitx.js"></script>
 <% } %>
 
-<script type="text/javascript">
-    // only load the flash fallback when needed
-    if ( !( 'WebSocket' in window ) ) {
-        document.write([
-            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/swfobject.js"></scr'+'ipt>',
-            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/FABridge.js"></scr'+'ipt>',
-            '<scr'+'ipt type="text/javascript" src="lib/web-socket-js/web_socket.js"></scr'+'ipt>'
-        ].join(''));
-    }
-</script>
+<% if ( $config->{enable_websocket} ) { %>
+<script type="text/javascript" src="lib/Sprocket/Filter.js"></script>
+<script type="text/javascript" src="lib/Sprocket/Filter/Line.js"></script>
+<script type="text/javascript" src="lib/Sprocket/Filter/JSON.js"></script>
 
-<script type="text/javascript" src="lib/web-socket-js/swfobject.js"></script>
-<script type="text/javascript" src="lib/web-socket-js/FABridge.js"></script>
-<script type="text/javascript" src="lib/web-socket-js/web_socket.js"></script>
+<script type="text/javascript" src="lib/Sprocket/Websocket.js"></script>
+<% } %>
 
 <!-- init JS -->
 <script type="text/javascript">
-    if ( WebSocket.__initialize ) {
-        // Set URL of your WebSocketMain.swf here:
-        WebSocket.__swfLocation = 'web-socket-js/WebSocketMain.swf';
-    }
-
     Ext.BLANK_IMAGE_URL = 'images/s.gif';
 
     window.log = function() {};
@@ -113,6 +106,21 @@
     } else if ( Ext.log ) {
         window.log = window.Ext.log;
     }
+
+    <% if ( $config->{enable_websocket} ) { %>
+    // pseudo websocket fallback using longpolling when flash is off or unavailable
+    // CopyRight (c) 2010 - David Davis
+    Ext.ux.WebSocketMgr.setOptions({
+        enableFlashSocket: <%= $config->{enable_flash_websocket} ? 'true' : 'false' %>,
+        enableLongpoll: <%= $config->{enable_longpoll} ? 'true' : 'false' %>,
+        url: '<%= $config->{websocket_proxy_uri} %>',
+        // required files from web-socket-js
+        script_swfobject: 'lib/web-socket-js/swfobject.js',
+        script_fabridge:  'lib/web-socket-js/FABridge.js',
+        script_websocket: 'lib/web-socket-js/web_socket.js',
+        swf_websocket:    'lib/web-socket-js/WebSocketMain.swf'
+    });
+    <% } %>
 </script>
 
 <% if ( $config->{enable_chromeframe} ) { %>
@@ -140,8 +148,9 @@
 
 <!-- Everything else is on-demand -->
 
-<% if ( $config->{google_analytics_code} ) { %>
-<!-- GA -->
+<% if ( $config->{enable_google_analytics_in} && $config->{google_analytics_code} ) { %>
+<!-- Begin Google Analytics -->
+<% if ( $config->{enable_google_analytics_in}->{ $self->app->mode } ) { %>
 <script type="text/javascript">
     var gaJsHost = ( ( "https:" == document.location.protocol ) ? "https://ssl." : "http://www." );
     document.write( unescape( "%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E" ) );
@@ -152,9 +161,10 @@
     }
 </script>
 <% } else { %>
-<!-- GA Disabled -->
+<!-- Disabled in <%= $self->app->mode %> mode -->
 <% } %>
-
+<!-- End Google Analytics -->
+<% } %>
 <script type="text/javascript">
     app.time( 'pageload' );
 </script>

@@ -81,6 +81,7 @@ sub startup {
     foreach( @{$config->{mojo_plugins}} ) {
         s/-/_/g;
         next if ( $_ eq 'static_fallback' );
+        warn "loading plugin:$_\n" if ( $self->mode eq 'development' );
         $self->plugin( $_, $config );
     }
 
