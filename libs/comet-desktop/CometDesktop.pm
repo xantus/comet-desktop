@@ -136,7 +136,7 @@ sub startup {
     #$auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
     #$auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
 
-    $self->routes->route( '/' )->via( 'get' )->to( cb => sub { shift->redirect_to( '/desktop' ); } );
+    $self->routes->route( '/' )->via( 'get' )->to({ callback => sub { shift->redirect_to( '/desktop/' ) } });
     $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
     $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
     $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
