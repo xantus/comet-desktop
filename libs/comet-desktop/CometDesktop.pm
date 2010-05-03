@@ -101,6 +101,12 @@ sub startup {
         warn Data::Dumper->Dump([$config],['config']);
     }
 
+    $self->session->cookie_name( $config->{mojo_session_cookie} )
+        if ( $config->{mojo_session_cookie} );
+
+    $self->session->cookie_path( $config->{mojo_session_path} )
+        if ( $config->{mojo_session_path} );
+
     # use our json encoder
     $self->renderer->add_handler(
         json => sub {
