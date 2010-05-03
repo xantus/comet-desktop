@@ -41,7 +41,7 @@ sub login {
         }
     }
 
-    my $uid = $self->session( 'id' );
+    my $uid = $self->session( 'uid' );
 
     if ( $uid && !$error ) {
         # temporary
