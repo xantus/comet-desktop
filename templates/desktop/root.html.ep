@@ -101,7 +101,7 @@
     window.log = function() {};
     if ( !Ext.isIE && window.console ) {
         window.log = function() {
-            console.log[ console.firebug ? 'apply' : 'call' ]( console, Array.prototype.slice.call( arguments ) );
+            console.log[ console.firebug || Ext.isChrome ? 'apply' : 'call' ]( console, Array.prototype.slice.call( arguments ) );
         };
     } else if ( Ext.log ) {
         window.log = window.Ext.log;
