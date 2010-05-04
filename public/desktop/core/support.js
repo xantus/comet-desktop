@@ -7,7 +7,8 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
         app.socket = this;
         window.webSocketError = this.webSocketError.createDelegate( this );
         window.webSocketLog = this.webSocketLog.createDelegate( this );
-        this.location = 'ws://' + location.hostname + ':3001/';
+
+        this.location = app.websocketUrl( '/', 3001 );
         this.subscribe( '/server', this.eventRoute, this );
         this.subscribe( this.appChannel, this.eventReceived, this );
         // TODO add button item to the panel here instead of in base.js

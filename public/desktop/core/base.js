@@ -554,9 +554,9 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         return ( this.desktop.el.getHeight() - height ) / 2;
     },
 
-    websocketUrl: function( path ) {
+    websocketUrl: function( path, port ) {
         var https = window.location.protocol.substr( -2, 1 ) == 's' ? true : false;
-        return 'ws' + ( https ? 's' : '' ) + '://' + window.location.host + ( path || '/' );
+        return 'ws' + ( https ? 's' : '' ) + '://' + window.location.hostname + ( port ? ':' + port : '' ) + ( path || '/' );
     },
 
     decodeResponse: function( r ) {
