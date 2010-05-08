@@ -3,11 +3,10 @@ package CometDesktop;
 use strict;
 use warnings;
 
-use CometDesktop::Session;
+use CometDesktopX::Session;
 use CometDesktop::Controller;
 use DBI;
 use DBIx::Simple;
-use Scalar::Util 'weaken';
 
 use base 'Mojolicious';
 
@@ -34,18 +33,16 @@ sub process {
         or die 'DBI connect failed';
 
     # session
-    $c->session_store->tx( $c->tx )->store->dbh( $dbh );
+    $c->session_store->store->dbh( $dbh );
 
     # dbix
     my $db = DBIx::Simple->connect( $dbh )
         or die DBIx::Simple->error;
 
-    # user class, weak ref to dbix
-    $c->user->db( $db );
-
-    weaken $db;
-
     $c->db( $db );
+
+    # user class, holds weak ref to ctx
+    $c->user->init( $c );
 
     $self->dispatch( $c );
 }
@@ -55,8 +52,16 @@ sub production_mode {
 }
 
 sub development_mode {
+    my $log = shift->log;
     # default mode
-    shift->log->level( 'debug' );
+    $log->level( 'debug' );
+
+    # see EOF
+    tie *STDERR, 'Tie::Callback', sub {
+        my $line = "STDERR: $_[1]"; chomp( $line );
+        # TODO, use goto so the call stack is jumped a level
+        $log->debug( $line );
+    };
 }
 
 # This method will run once at server start
@@ -149,5 +154,22 @@ sub startup {
 
     return;
 }
+
+1;
+
+package Tie::Callback;
+
+use strict;
+use warnings;
+
+sub PRINT {
+    shift->( @_ );
+}
+
+sub TIEHANDLE {
+    bless pop, shift;
+}
+
+sub BINMODE {}
 
 1;
