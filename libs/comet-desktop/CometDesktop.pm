@@ -28,22 +28,6 @@ sub process {
             if ( $c->tx->connection =~ m/\(0x([^\)]+)\)$/ );
     }
 
-    # database
-    my $dbh = DBI->connect( @{$config}{qw( db_interface db_user db_pass )} )
-        or die 'DBI connect failed';
-
-    # session
-    $c->session_store->store->dbh( $dbh );
-
-    # dbix
-    my $db = DBIx::Simple->connect( $dbh )
-        or die DBIx::Simple->error;
-
-    $c->db( $db );
-
-    # user class, holds weak ref to ctx
-    $c->user->init( $c );
-
     $self->dispatch( $c );
 }
 
@@ -52,20 +36,71 @@ sub production_mode {
 }
 
 sub development_mode {
-    my $log = shift->log;
-    # default mode
-    $log->level( 'debug' );
-
-    # see EOF
-    tie *STDERR, 'Tie::Callback', sub {
-        my $line = "STDERR: $_[1]"; chomp( $line );
-        # TODO, use goto so the call stack is jumped a level
-        $log->debug( $line );
-    };
+    shift->log->level( 'debug' );
 }
 
 # This method will run once at server start
 sub startup {
+    my $self = shift;
+
+    $self->_load_config;
+    $self->_add_hooks;
+
+    # Use our own controller
+    $self->controller_class( 'CometDesktop::Controller' );
+
+    $self->routes->route( '/' )->via( 'get' )->to({ callback => sub { shift->redirect_to( '/desktop/' ) } });
+    $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
+    $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
+    $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
+
+    return;
+}
+
+sub _add_hooks {
+    my $self = shift;
+
+    $self->plugins->add_hook(
+        after_static_dispatch => sub {
+            my $c = $_[ 1 ];
+
+            # a file is about to be served, skip db and user obj setup
+            return if $c->res->code;
+
+            # database
+            my $dbh = DBI->connect( @{$config}{qw( db_interface db_user db_pass )} )
+                or die 'DBI connect failed';
+
+            # session
+            $c->session_store->store->dbh( $dbh );
+
+            # dbix
+            my $db = DBIx::Simple->connect( $dbh )
+                or die DBIx::Simple->error;
+
+            $c->db( $db );
+
+            # user class, holds weak ref to ctx
+            $c->user->init( $c );
+        }
+    )->add_hook(
+        after_dispatch => sub {
+            my $c = $_[ 1 ];
+
+            if ( $c->db ) {
+                warn "disconnecting from db\n";
+                $c->db->disconnect;
+
+                $c->db( undef );
+                $c->user( undef );
+            }
+        }
+    );
+
+    return;
+}
+
+sub _load_config {
     my $self = shift;
 
     $config = $self->plugin( multi_config => {
@@ -106,11 +141,15 @@ sub startup {
         warn Data::Dumper->Dump([$config],['config']);
     }
 
-    $self->session->cookie_name( $config->{mojo_session_cookie} )
-        if ( $config->{mojo_session_cookie} );
-
-    $self->session->cookie_path( $config->{mojo_session_path} )
-        if ( $config->{mojo_session_path} );
+    if ( $config->{enable_stderr_log_redirect} ) {
+        my $log = $self->log;
+        # see EOF
+        tie *STDERR, 'Tie::Callback', sub {
+            my $line = "STDERR: ----------- $_[1]"; chomp( $line );
+            # TODO, use goto so the call stack is jumped a level
+            $log->debug( $line );
+        } unless tied *STDERR;
+    }
 
     # use our json encoder
     $self->renderer->add_handler(
@@ -133,24 +172,17 @@ sub startup {
         }
     }
 
+    # sessions
     $self->secret( $config->{mojo_session_secret} )
         if ( $config->{mojo_session_secret} );
-
-    # Use our own controller
-    $self->controller_class( 'CometDesktop::Controller' );
-
-    # Auth Bridge
-    #my $auth = $self->routes->bridge->to( 'auth#auth' );
-
-    # TBD use method check in auth#login
-    #$auth->route( '/login' )->via( 'get' )->to( 'auth#login' )->name( 'login' );
-    #$auth->route( '/login' )->via( 'post' )->to( 'auth#login_post' );
-    #$auth->route( '/logout' )->via( 'get' )->to( 'auth#logout' )->name( 'logout' );
-
-    $self->routes->route( '/' )->via( 'get' )->to({ callback => sub { shift->redirect_to( '/desktop/' ) } });
-    $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
-    $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
-    $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
+    $self->session->cookie_name( $config->{mojo_session_cookie_name} )
+        if ( $config->{mojo_session_cookie_name} );
+    $self->session->cookie_path( $config->{mojo_session_cookie_path} )
+        if ( $config->{mojo_session_cookie_path} );
+    $self->session->cookie_domain( $config->{mojo_session_cookie_domain} )
+        if ( $config->{mojo_session_cookie_domain} );
+    $self->session->default_expiration( $config->{mojo_session_default_expiration} )
+        if ( defined $config->{mojo_session_default_expiration} );
 
     return;
 }

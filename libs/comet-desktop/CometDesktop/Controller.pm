@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Mojolicious::Controller';
 
-use CometDesktop::User;
+use CometDesktopX::User;
 use Digest::SHA1();
 
 BEGIN {
@@ -18,9 +18,9 @@ __PACKAGE__->attr( json => HAS_JSON ? sub { JSON->new } : sub { Mojo::JSON->new 
 __PACKAGE__->attr( false => HAS_JSON ? sub { JSON->false } : sub { Mojo::JSON->false } );
 __PACKAGE__->attr( true => HAS_JSON ? sub { JSON->true } : sub { Mojo::JSON->true } );
 
-__PACKAGE__->attr( user => sub { CometDesktop::User->new } );
+__PACKAGE__->attr( user => sub { CometDesktopX::User->new } );
+__PACKAGE__->attr( session_store => sub { CometDesktopX::Session->new } );
 __PACKAGE__->attr( version => sub { $CometDesktop::VERSION } );
-__PACKAGE__->attr( session_store => sub { CometDesktop::Session->new } );
 __PACKAGE__->attr([qw/ db config /]);
 
 sub new {
@@ -58,9 +58,7 @@ sub json_decode {
 }
 
 sub sha1_hex {
-    shift;
-    return Digest::SHA1::sha1_hex( @_ );
+    Digest::SHA1::sha1_hex( @_[ 1 .. $#_ ] );
 }
-
 
 1;

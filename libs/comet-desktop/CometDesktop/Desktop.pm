@@ -18,37 +18,26 @@ sub root {
 sub login {
     my $self = shift;
 
-    my $tk = $self->param( 'token' );
-    my $user = $self->param( 'username' );
-    my $pass = $self->param( 'password' );
-    my $ua = $self->req->headers->user_agent || 'Anon';
-    my $token = $self->sha1_hex( join( '|', $self->app->secret, $ua ) );
-
+    my $user_in = $self->param( 'username' );
+    my $pw_hash_in = $self->param( 'password' );
     my $error;
 
-    # $self->user->logged_in ...
+    my $token = $self->sha1_hex(
+        join( '|', $self->app->secret, $self->req->headers->user_agent || 'Anon' )
+    );
 
-    if ( defined $user && defined $pass ) {
-        # TBD db check
-        if ( defined $tk && $tk eq $token && $self->sha1_hex( $token .':'. 'foobar' ) eq $pass ) {
-            $self->session( uid => time() );
-            $self->session( username => $user );
-        } else {
-            if ( defined $tk && $tk ne $token ) {
-                warn "token passed does not exist, or does not match real token\n";
-            }
+    if ( defined $user_in && defined $pw_hash_in ) {
+        unless ( $self->user->load_user( $user_in, $pw_hash_in, $token ) ) {
             $error = 'Username or Password Incorrect';
         }
     }
 
-    my $uid = $self->session( 'uid' );
-
-    if ( $uid && !$error ) {
-        # temporary
+    if ( $self->user->logged_in ) {
         $self->render_json({
             success => $self->true,
             data => {
-                nickname => 'Xantus',
+                nickname => $self->user->user_name,
+                # temporary
                 load => [
                     'js/samples.js'
                 ]
@@ -57,9 +46,10 @@ sub login {
     } else {
         $self->render_json({
             success => $self->false,
+            $error ? ( error => $error ) : (),
             token => $token,
+            # default username for login app
             username => $self->session( 'username' ) || '',
-            error => $error
         });
     }
 }
@@ -67,7 +57,7 @@ sub login {
 sub logout {
     my $self = shift;
 
-    $self->session( uid => '' );
+    $self->user->logout;
 
     $self->render_json({
         success => $self->true
