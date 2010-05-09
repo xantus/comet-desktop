@@ -5,6 +5,8 @@ CometDesktop.WebSocket = Ext.extend( CometDesktop.Module, {
 
     init: function() {
         app.socket = this;
+        if ( !( 'WebSocket' in window ) )
+            return;
         window.webSocketError = this.webSocketError.createDelegate( this );
         window.webSocketLog = this.webSocketLog.createDelegate( this );
 
