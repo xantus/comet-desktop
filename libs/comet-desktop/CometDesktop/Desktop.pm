@@ -27,9 +27,12 @@ sub login {
     );
 
     if ( defined $user_in && defined $pw_hash_in ) {
-        unless ( $self->user->load_user( $user_in, $pw_hash_in, $token ) ) {
+        unless ( $self->user->login_user( $user_in, $pw_hash_in, $token ) ) {
             $error = 'Username or Password Incorrect';
         }
+    } elsif ( $self->config->{autologin_guest} && !$self->session( 'logout' ) ) {
+        # password-less login
+        $self->user->load_user( 'guest' );
     }
 
     if ( $self->user->logged_in ) {
@@ -37,10 +40,7 @@ sub login {
             success => $self->true,
             data => {
                 nickname => $self->user->user_name,
-                # temporary
-                load => [
-                    'js/samples.js'
-                ]
+                load => $self->user->app_files,
             }
         });
     } else {

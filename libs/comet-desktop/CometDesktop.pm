@@ -125,22 +125,6 @@ sub _load_config {
         $self->plugin( $_, $config );
     }
 
-    foreach( @{$config->{cometdesktop_apps}} ) {
-        warn "configuring app $_\n";
-        my $dir = $self->home->rel_dir( "apps/$_/public" );
-        if ( -d $dir ) {
-            warn "adding static fallback for /apps/$_/ to $dir\n";
-            $static->add( "/apps/$_/" => $dir );
-        }
-        s/-/_/g;
-        $self->plugin( $_, $config );
-    }
-
-    if ( $self->mode eq 'development' ) {
-        require Data::Dumper;
-        warn Data::Dumper->Dump([$config],['config']);
-    }
-
     if ( $config->{enable_stderr_log_redirect} ) {
         my $log = $self->log;
         # see EOF
@@ -183,6 +167,30 @@ sub _load_config {
         if ( $config->{mojo_session_cookie_domain} );
     $self->session->default_expiration( $config->{mojo_session_default_expiration} )
         if ( defined $config->{mojo_session_default_expiration} );
+
+    my $db = DBIx::Simple->connect( @{$config}{qw( db_interface db_user db_pass )} )
+        or die DBIx::Simple->error;
+
+    $config->{cometdesktop_apps} = $db->query( 'SELECT * FROM apps' )->hashes;
+
+    $db->disconnect;
+
+    foreach( @{$config->{cometdesktop_apps}} ) {
+        warn "configuring app $_->{app_id} : $_->{app_name} : $_->{app_desc}\n";
+        my $dir = $self->home->rel_dir( "apps/$_->{app_name}/public" );
+        if ( -d $dir ) {
+            warn "adding static fallback for apps/$_->{app_name}/ to $dir\n";
+            $static->add( "/desktop/apps/$_->{app_name}/" => $dir );
+        }
+        # XXX
+        #my $plug = $_->{app_name}; $plug =~ s/-/_/g;
+        #$self->plugin( $plug, $config );
+    }
+
+    if ( $self->mode eq 'development' ) {
+        require Data::Dumper;
+        warn Data::Dumper->Dump([$config],['config']);
+    }
 
     return;
 }

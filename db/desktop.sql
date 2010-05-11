@@ -95,4 +95,27 @@ INSERT INTO user_groups VALUES('05a1ff3e599011df83253fac66072281','fc1218445a631
 /* guest - guest */
 INSERT INTO user_groups VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','fc1218445a6311df801447cd67d8cf2f');
 
+/* apps have a single file or url, and jit load everything else */
+CREATE TABLE apps (
+        app_id    VARCHAR(40) PRIMARY KEY,
+        app_name  VARCHAR(40) NOT NULL,
+        app_file  TEXT,
+        app_desc  VARCHAR(255) NOT NULL,
+        UNIQUE(app_id)
+    );
+
+INSERT INTO apps VALUES('b4e000f85ca711df9f47dfe6670e4c36','samples','js/samples.js','Sample Apps');
+INSERT INTO apps VALUES('8cf006705cb011df89f4a7889ed35127','admin-users','js/admin-users.js','User Admin');
+
+CREATE TABLE user_apps (
+        user_id   VARCHAR(40) NOT NULL,
+        app_id    VARCHAR(40) NOT NULL,
+        UNIQUE(user_id,app_id)
+    );
+
+/* root - sample */
+INSERT INTO user_apps VALUES('05a1ff3e599011df83253fac66072281','b4e000f85ca711df9f47dfe6670e4c36');
+INSERT INTO user_apps VALUES('05a1ff3e599011df83253fac66072281','8cf006705cb011df89f4a7889ed35127');
+/* guest - sample */
+INSERT INTO user_apps VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','b4e000f85ca711df9f47dfe6670e4c36');
 

@@ -50,36 +50,57 @@ sub logout {
     $self->logged_in( 0 );
     $self->user_id( undef );
     $self->user_name( undef );
-    $self->ctx->session( uid => '' );
+    $self->ctx->session( uid => '', logout => time() );
 
     return 1;
 }
 
-sub load_user {
+sub login_user {
     my ( $self, $user_name_in, $pw_token, $token ) = @_;
 
     # XXX lets figure out a way to not store password in plain text
     # but preserve the ability to use a hash based check
 
-    my ( $user_id, $user_pass, $user_name ) = $self->ctx->db->query(
-        'SELECT user_id, user_pass, user_name FROM users WHERE user_name=? LIMIT 1',
-        lc $user_name_in
-    )->list;
+    my ( $user_id, $user_name, $user_pass ) = $self->ctx->db->query(qq|
+        SELECT user_id, user_name, user_pass
+        FROM users
+        WHERE user_name=? LIMIT 1
+    |, lc $user_name_in )->list;
 
     # user does not exist
     return unless $user_id;
 
-    if ( sha1_hex( $token .':'. $user_pass ) eq $pw_token ) {
+    if ( $pw_token && sha1_hex( $token .':'. $user_pass ) eq $pw_token ) {
         $self->logged_in( 1 );
         $self->user_id( $user_id );
         $self->user_name( $user_name );
-        $self->ctx->session( uid => $user_id, username => $user_name );
+        $self->ctx->session( uid => $user_id, username => $user_name, logout => '' );
         return 1;
     }
 
     # incorrect password
 
     return;
+}
+
+sub load_user {
+    my ( $self, $user_name_in ) = @_;
+
+    my ( $user_id, $user_name ) = $self->ctx->db->query(qq|
+        SELECT user_id, user_name
+        FROM users
+        WHERE user_name=? LIMIT 1
+    |, lc $user_name_in )->list;
+
+    # user does not exist
+    return unless $user_id;
+
+    $self->logged_in( 1 );
+    $self->user_id( $user_id );
+    $self->user_name( $user_name );
+    $self->ctx->session( uid => $user_id, username => $user_name, logout => '' );
+
+    return 1;
 }
 
 sub load_by_uid {
@@ -101,7 +122,7 @@ sub load_by_uid {
     $self->logged_in( 1 );
     $self->user_id( $user_id );
     $self->user_name( $user_name );
-    $self->ctx->session( uid => $user_id, username => $user_name );
+    $self->ctx->session( uid => $user_id, username => $user_name, logout => '' );
     $self->perms;
 
     return 1;
@@ -181,6 +202,23 @@ sub perms {
     warn Data::Dumper->Dump([$perms],['perms']);
 
     return $self->{perms} = $perms;
+}
+
+sub app_files {
+    my $self = shift;
+    return [] unless ( $self->logged_in );
+
+    my @files = map { 'apps/'.$_->{app_name}.'/'.$_->{app_file} } @{
+        $self->ctx->db->query(qq|
+            SELECT a.app_name, a.app_file
+            FROM user_apps as ua
+                JOIN apps AS a
+                    ON ua.app_id=a.app_id
+            WHERE ua.user_id=?
+        |, $self->user_id )->hashes
+    };
+
+    return \@files;
 }
 
 1;
