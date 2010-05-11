@@ -14,7 +14,7 @@ CREATE TABLE users (
         user_pass     VARCHAR(255) NOT NULL,
         UNIQUE(user_id)
     );
-INSERT INTO users VALUES('05a1ff3e599011df83253fac66072281','xantus','foobar');
+INSERT INTO users VALUES('05a1ff3e599011df83253fac66072281','root','foobar');
 INSERT INTO users VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','guest','');
 
 /* general user data table */
@@ -80,7 +80,7 @@ CREATE TABLE access_key_exclude (
         user_id        VARCHAR(40) NOT NULL,
         UNIQUE(access_key_id,user_id)
     );
-/* /test - xantus */
+/* /test - root */
 INSERT INTO access_key_exclude VALUES('f791ea125aed11df88bb075a56fa5553','05a1ff3e599011df83253fac66072281');
 
 CREATE TABLE user_groups (
@@ -88,9 +88,9 @@ CREATE TABLE user_groups (
         group_id     VARCHAR(40) NOT NULL,
         UNIQUE(user_id,group_id)
     );
-/* xantus - user */
+/* root - user */
 INSERT INTO user_groups VALUES('05a1ff3e599011df83253fac66072281','ebe1205a5a6311dfb1440b068f8bd838');
-/* xantus - admin */
+/* root - admin */
 INSERT INTO user_groups VALUES('05a1ff3e599011df83253fac66072281','fc1218445a6311df801447cd67d8cf2f');
 /* guest - guest */
 INSERT INTO user_groups VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','fc1218445a6311df801447cd67d8cf2f');
