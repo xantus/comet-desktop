@@ -5,11 +5,20 @@ http://github.com/xantus/comet-desktop
 
 
 This version is completely rewritten!  The backend is Mojo
-which has no other requirements other than Perl 5.8.1+
+  which has no other requirements other than Perl 5.8.1+
 Mojo has a built-in web server, and supports CGI, and FastCGI
 
 Comet Desktop can run on almost anything, including Windows!
-(we dev on linux, so report any win32 issues :>)
+  (we dev on linux, so report any win32 issues :>)
+
+
+Getting Started
+
+Intall mysql server and client.  import db/desktop.sql into
+  a database named 'desktop' (or configure it via etc/comet-desktop.conf
+
+Edit etc/comet-desktop.conf to your liking, but its best to 
+  start out with the defaults to get a look at it first
 
 To start the event bus
 
@@ -25,12 +34,12 @@ To start the http server:
 ./run
 
 CGI, and FastCGI will be covered later when the code is more
-mature.
+  mature.
 
 
 --
 This is v2 of Comet Desktop, the OLD v1 can be found on
-Google Code at http://code.google.com/p/cometdesktop/
+  Google Code at http://code.google.com/p/cometdesktop/
 
 -------------------------------------------------------------
                        github Users
