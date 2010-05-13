@@ -48,9 +48,6 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
     isReady: false,
     modules: [],
     minimizeAll: true,
-    manifest: [
-        'core/support.js'
-    ],
 
 //        'js/samples.js'//,
 //        '/apps/irc-example/js/irc-client.js'
@@ -170,7 +167,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         Ext.getCmp( 'cd-task-panel' ).show();
         this.viewport.doLayout();
 
-        var manifest = this.manifest;
+        var manifest = [];
 
         if ( ev.res && ev.res.data ) {
             if ( ev.res.data.load )
@@ -179,6 +176,36 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                Ext.getCmp( 'system-user-menu' ).setText( ev.res.data.nickname );
         }
 
+        var apps = [ '@core-support' ];
+        Ext.each( manifest, function( o ) {
+            apps.push( '@' + o.id );
+            $JIT.depends[o.id] = { virtual: true, depends: [ o.path + o.file  ] };
+        });
+
+        // our virtual to load all the apps
+        $JIT.depends[ 'user-apps' ] = { virtual: true, depends: apps };
+        $JIT.depends[ 'core-support' ] = { virtual: true, depends: [ 'core/support.js' ] };
+
+        $JIT({
+//            debug: true,
+            method: 'GET',
+            callback: function( loaded ) {
+                if ( !loaded )
+                    return;
+
+                var i = 0;
+                Ext.each( this.modules, function( m ) {
+                    if ( m.autoStart ) {
+                        // TBD revisit this
+                        i += 500;
+                        this.publish.defer( i, this, [ m.channel, { action: 'launch' } ] );
+                    }
+                }, this);
+            },
+            scope: this
+        }, '@user-apps' );
+
+/*
         new CometDesktop.FileFetcher({
             files: manifest,
             noCache: true,
@@ -203,6 +230,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             },
             scope: this
         });
+*/
     },
 
     eventLogout: function() {
@@ -1283,19 +1311,34 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
         Ext.apply( this, config );
 
         // TBD use id instead?
-        if ( !this.appId )
-            this.appId = app.id( 'app-' );
+        if ( !this.id )
+            this.id = app.id( 'app-' );
 
         // TBD use channel instead?
         if ( !this.appChannel )
-            this.appChannel = '/desktop/app/' + this.appId;
+            this.appChannel = '/desktop/app/' + this.id;
 
         this.init( config );
 
-        if ( this.requires )
-            this.loadFiles( this.requires );
-        else
+        if ( this.requires ) {
+            //Ext.apply( $JIT.depends, this.requires );
+            if ( $JIT.depends[ this.appId ] ) {
+                $JIT.depends[ this.appId ].depends = $JIT.depends[ this.appId ].depends.concat( this.requires );
+            } else {
+                $JIT.depends[ this.appId ] = { virtual: true, depends: this.requires };
+            }
+            $JIT({
+                method: 'GET',
+                modulePath: 'apps/' + this.appName + '/',
+                scope: this,
+                callback: function( loaded ) {
+                    if ( loaded )
+                        this.startup();
+                },
+            }, '@' + this.appId );
+        } else {
             this.startup();
+        }
     },
 
     init: Ext.emptyFn,
@@ -1303,41 +1346,6 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
 
     register: function( ev ) {
         this.publish( app.channels.registerApp, ev );
-    },
-
-    __loadSuccess: function() {
-        this.publish( this.appChannel, { action: 'deps-loaded', success: true } );
-        this.__fetcher = null;
-        this.startup();
-    },
-
-    __loadFailure: function() {
-        log('failed to load all files, retrying');
-        this.__retryCount++;
-        if ( this.__retryCount > 10 )
-            return;
-        this.__fetcher.start();
-    },
-
-    __loadedFile: function( data ) {
-        this.publish( this.appChannel, Ext.apply( data, { action: 'file-loaded' } ) );
-    },
-
-    loadFiles: function( files ) {
-        if ( Ext.isEmpty( files ) )
-            return;
-        if ( !Ext.isArray( files ) )
-            files = [ files ];
-
-        this.__fetcher = new CometDesktop.FileFetcher({
-            files: files,
-            noCache: true,
-            start: true,
-            itemHandler: this.__loadedFile,
-            success: this.__loadSuccess,
-            failure: this.__loadFailure,
-            scope: this
-        });
     }
 
 });

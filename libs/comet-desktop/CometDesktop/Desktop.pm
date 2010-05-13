@@ -30,7 +30,7 @@ sub login {
         unless ( $self->user->login_user( $user_in, $pw_hash_in, $token ) ) {
             $error = 'Username or Password Incorrect';
         }
-    } elsif ( $self->config->{autologin_guest} && !$self->session( 'logout' ) ) {
+    } elsif ( !$self->user->logged_in && $self->config->{autologin_guest} && !$self->session( 'logout' ) ) {
         # password-less login
         $self->user->load_user( 'guest' );
     }

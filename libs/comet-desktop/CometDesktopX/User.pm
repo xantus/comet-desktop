@@ -208,9 +208,15 @@ sub app_files {
     my $self = shift;
     return [] unless ( $self->logged_in );
 
-    my @files = map { 'apps/'.$_->{app_name}.'/'.$_->{app_file} } @{
+    my @files = map {
+        {
+            id => $_->{app_id},
+            path => 'apps/'.$_->{app_name}.'/',
+            file => $_->{app_file}
+        }
+    } @{
         $self->ctx->db->query(qq|
-            SELECT a.app_name, a.app_file
+            SELECT a.app_id, a.app_name, a.app_file
             FROM user_apps as ua
                 JOIN apps AS a
                     ON ua.app_id=a.app_id

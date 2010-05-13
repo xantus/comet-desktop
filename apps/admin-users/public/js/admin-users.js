@@ -2,6 +2,9 @@ Ext.ns( 'CometDesktop.ux' );
 
 CometDesktop.ux.UserAdmin = Ext.extend( CometDesktop.Module, {
 
+    appId: '8cf006705cb011df89f4a7889ed35127',
+    appName: 'admin-users',
+
     id: 'admin-users-win',
     title: 'User Admin',
     appChannel: '/desktop/system/admin/users',
@@ -15,7 +18,7 @@ CometDesktop.ux.UserAdmin = Ext.extend( CometDesktop.Module, {
         /*
         this.register({
             self: this,
-            id: this.appId,
+            id: this.id,
             channel: this.appChannel,
             text: this.title,
             iconCls: 'icon-grid',
