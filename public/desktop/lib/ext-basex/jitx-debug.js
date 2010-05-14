@@ -353,10 +353,13 @@
 	
 	            if (callback) {
 	                var cb = (callback.success || callback).createDelegate(callback.scope || null, [callback||{}], 0);
-	                
-	                Ext.isIE ? node.on('readystatechange', function(){
-	                    this.dom.readyState == 'loaded' && cb();    
-	                }) : node.on("load", cb);
+                    if ( tag == 'LINK' ) {
+                        cb();
+                    } else {
+    	                Ext.isIE ? node.on('readystatechange', function(){
+	                        this.dom.readyState == 'loaded' && cb();    
+	                    }) : node.on("load", cb);
+                    }
 	            }
 	            deferred || ndom.parentNode || head.appendChild(ndom);
 	        }
