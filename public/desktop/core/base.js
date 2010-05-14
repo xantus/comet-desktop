@@ -1328,7 +1328,7 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
                 $JIT.depends[ this.appId ] = { virtual: true, depends: this.requires };
             }
             $JIT({
-                method: 'DOM',
+                method: 'GET',
                 modulePath: 'apps/' + this.appName + '/',
                 scope: this,
                 callback: function( loaded ) {
@@ -1665,7 +1665,7 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
             case 'css':
                 Ext.Ajax.request({
-                    method: 'DOM',
+                    method: 'GET',
                     url: item.file,
                     scope: this,
                     disableCaching: ( item.noCache || this.noCache ? true : false ),

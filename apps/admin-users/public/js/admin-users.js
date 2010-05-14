@@ -427,7 +427,7 @@ CometDesktop.ux.admin.UserAdmin = Ext.extend( CometDesktop.Module, {
     title: 'User Admin',
     appChannel: '/desktop/system/admin/users',
     requires: [
-        'apps/admin-users/css/admin-users.css'
+        'css/admin-users.css'
     ],
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
@@ -441,6 +441,10 @@ CometDesktop.ux.admin.UserAdmin = Ext.extend( CometDesktop.Module, {
             autoStart: true
         });
         */
+    },
+
+    startup: function() {
+        this.createWindow();
     },
 
     eventReceived: function( ev ) {

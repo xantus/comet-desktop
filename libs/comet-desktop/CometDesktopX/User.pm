@@ -224,8 +224,8 @@ sub app_files {
         |, $self->user_id )->hashes
     };
 
-    unshift( @files, {
-        id => 'slate-theme',
+    push( @files, {
+        id => 'slatetheme',
         path => 'themes/',
         file => 'slate-theme/css/xtheme-slate.css',
     });
