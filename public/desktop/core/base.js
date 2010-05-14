@@ -619,7 +619,7 @@ Ext.override( Ext.menu.BaseItem, {
         Ext.menu.BaseItem.superclass.initComponent.apply( this, arguments );
 
         if ( this.channel && !this.handler ) {
-            log('registered menu channel '+this.channel);
+//            log('registered menu channel '+this.channel);
             this.on( 'click', function() { this.publish( this.channel, { action: 'launch' } ); }, this );
         }
 
