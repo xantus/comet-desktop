@@ -208,8 +208,8 @@ ul.x-tab-strip-bottom{
 /* Toolbars */
 
 .x-toolbar{
-	border-color:#abc;
     background:#f0f4f5 url(../images/slate/toolbar/bg.gif) repeat-x top left;
+	border-color:#555;
 }
 .x-toolbar button{
     color:#f4f4f4;
@@ -730,7 +730,7 @@ body.x-body-masked .x-window-mc, body.x-body-masked .x-window-plain .x-window-mc
 /* Layout */
 
 .x-border-layout-ct{
-    background:#f0f0f0;
+/*    background:#f0f0f0; */
 }
 .x-accordion-hd{
 	background-image:url(../images/slate/panel/light-hd.gif);
