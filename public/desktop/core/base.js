@@ -602,8 +602,8 @@ Ext.onReady(function() {
 
     try {
         document.write = function( html ) {
-            log('document.write captured:', arguments);
-            Ext.DomHelper.insertHtml( 'afterEnd', document.body, html );
+            log('after ready document.write captured:', arguments);
+            Ext.DomHelper.insertHtml( 'beforeEnd', document.body, html );
         };
     } catch(e) { log('document write catch error:'+e); };
 
@@ -1328,7 +1328,7 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
                 $JIT.depends[ this.appId ] = { virtual: true, depends: this.requires };
             }
             $JIT({
-                method: 'GET',
+                method: 'DOM',
                 modulePath: 'apps/' + this.appName + '/',
                 scope: this,
                 callback: function( loaded ) {
@@ -1665,7 +1665,7 @@ CometDesktop.FileFetcher = Ext.extend( Ext.util.Observable, {
 
             case 'css':
                 Ext.Ajax.request({
-                    method: 'GET',
+                    method: 'DOM',
                     url: item.file,
                     scope: this,
                     disableCaching: ( item.noCache || this.noCache ? true : false ),

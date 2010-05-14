@@ -324,7 +324,7 @@
         SCRIPTTAG_POOL    : [],
         _domRefs          : [],        
         onUnload          : function(){
-           Ext.Element.uncache.apply(Ext.Element, A.SCRIPTTAG_POOL.concat(A._domRefs));
+//           Ext.Element.uncache.apply(Ext.Element, A.SCRIPTTAG_POOL.concat(A._domRefs));
            delete A._domRefs;
            delete A.SCRIPTTAG_POOL;
         },
@@ -2769,7 +2769,7 @@ The testCodec function permits selective codec support testing:
                         //Script Tags are re-usable in IE
                         A.SCRIPTTAG_POOL.push(C.element);
                     }else{
-                        Ext.Element.uncache(C.element);
+//                        Ext.Element.uncache(C.element);
                         C.element.remove();
                         //Other Browsers will not GBG-collect these tags, so help them along
                         if(d){
