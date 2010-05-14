@@ -188,7 +188,7 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
 
         $JIT({
 //            debug: true,
-            method: 'GET',
+            method: 'DOM',
             callback: function( loaded ) {
                 if ( !loaded )
                     return;
