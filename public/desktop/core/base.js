@@ -176,15 +176,14 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
                Ext.getCmp( 'system-user-menu' ).setText( ev.res.data.nickname );
         }
 
-        var apps = [ '@core-support' ];
+        var apps = [];
         Ext.each( manifest, function( o ) {
             apps.push( '@' + o.id );
-            $JIT.depends[o.id] = { virtual: true, depends: [ o.path + o.file  ] };
+            $JIT.depends[o.id] = { virtual: true, depends: [ o.path + o.file ] };
         });
 
         // our virtual to load all the apps
         $JIT.depends[ 'user-apps' ] = { virtual: true, depends: apps };
-        $JIT.depends[ 'core-support' ] = { virtual: true, depends: [ 'core/support.js' ] };
 
         $JIT({
 //            debug: true,

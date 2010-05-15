@@ -8,6 +8,13 @@ DROP TABLE access_key_exclude;
 DROP TABLE user_groups;
 */
 
+CREATE TABLE db_data (
+    data_key   VARCHAR(255) PRIMARY KEY,
+    data_value TEXT
+    );
+
+INSERT INTO db_data VALUES('sql_version','1.0.0');
+
 CREATE TABLE users (
         user_id       VARCHAR(40) PRIMARY KEY,
         user_name     VARCHAR(255) NOT NULL,
@@ -99,13 +106,14 @@ INSERT INTO user_groups VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','fc1218445a631
 CREATE TABLE apps (
         app_id    VARCHAR(40) PRIMARY KEY,
         app_name  VARCHAR(40) NOT NULL,
-        app_file  TEXT,
+        app_file  TEXT NOT NULL,
         app_desc  VARCHAR(255) NOT NULL,
         UNIQUE(app_id)
     );
 
 INSERT INTO apps VALUES('b4e000f85ca711df9f47dfe6670e4c36','samples','js/samples.js','Sample Apps');
 INSERT INTO apps VALUES('8cf006705cb011df89f4a7889ed35127','admin-users','js/admin-users.js','User Admin');
+INSERT INTO apps VALUES('16ae3b3c5fb011df802bcb8955b62d7f','languages','js/languages.js','Languages');
 
 CREATE TABLE user_apps (
         user_id   VARCHAR(40) NOT NULL,
@@ -113,9 +121,42 @@ CREATE TABLE user_apps (
         UNIQUE(user_id,app_id)
     );
 
-/* root - sample */
-INSERT INTO user_apps VALUES('05a1ff3e599011df83253fac66072281','b4e000f85ca711df9f47dfe6670e4c36');
-INSERT INTO user_apps VALUES('05a1ff3e599011df83253fac66072281','8cf006705cb011df89f4a7889ed35127');
+CREATE TABLE group_apps (
+        group_id  VARCHAR(40) NOT NULL,
+        app_id    VARCHAR(40) NOT NULL,
+        UNIQUE(group_id,app_id)
+    );
+
+/* user - sample */
+INSERT INTO group_apps VALUES('ebe1205a5a6311dfb1440b068f8bd838','b4e000f85ca711df9f47dfe6670e4c36');
+/* user - languages */
+INSERT INTO group_apps VALUES('ebe1205a5a6311dfb1440b068f8bd838','16ae3b3c5fb011df802bcb8955b62d7f');
 /* guest - sample */
-INSERT INTO user_apps VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','b4e000f85ca711df9f47dfe6670e4c36');
+INSERT INTO group_apps VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','b4e000f85ca711df9f47dfe6670e4c36');
+/* guest - languages */
+INSERT INTO group_apps VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','16ae3b3c5fb011df802bcb8955b62d7f');
+/* admin - user admin */
+INSERT INTO group_apps VALUES('fc1218445a6311df801447cd67d8cf2f','8cf006705cb011df89f4a7889ed35127');
+
+
+CREATE TABLE themes (
+        theme_id    VARCHAR(40) PRIMARY KEY,
+        theme_file  TEXT NOT NULL,
+        theme_desc  VARCHAR(255) NOT NULL,
+        UNIQUE(theme_id)
+    );
+
+INSERT INTO themes VALUES('852bc8165fb711dfbca93bc171e9abdc','slate-theme/css/xtheme-slate.css','Slate');
+INSERT INTO themes VALUES('ed2dfd445fb711dfba4c3f131a9643dc','lib/[ext_version]/resources/css/xtheme-gray.css','Ext Gray');
+INSERT INTO themes VALUES('fd23989e5fb711df98dab77dd90a2596','lib/[ext_version]/resources/css/xtheme-blue.css','Ext Blue');
+INSERT INTO themes VALUES('03ceb6385fb811dfa954ef1dd51f978a','lib/[ext_version]/resources/css/xtheme-access.css','Ext Access');
+
+CREATE TABLE user_themes (
+    user_id    VARCHAR(40) NOT NULL,
+    theme_id   VARCHAR(40) NOT NULL,
+    UNIQUE(user_id,theme_id)
+);
+
+INSERT INTO user_themes VALUES('05a1ff3e599011df83253fac66072281','852bc8165fb711dfbca93bc171e9abdc');
+INSERT INTO user_themes VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','ed2dfd445fb711dfba4c3f131a9643dc');
 

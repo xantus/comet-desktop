@@ -216,19 +216,42 @@ sub app_files {
         }
     } @{
         $self->ctx->db->query(qq|
-            SELECT a.app_id, a.app_name, a.app_file
-            FROM user_apps as ua
-                JOIN apps AS a
-                    ON ua.app_id=a.app_id
-            WHERE ua.user_id=?
-        |, $self->user_id )->hashes
+            SELECT DISTINCT a.app_id, a.app_name, a.app_file
+            FROM apps AS a
+            LEFT JOIN user_apps as ua
+                ON ua.user_id=?
+                AND ua.app_id=a.app_id
+            JOIN user_groups AS ug
+                ON ug.user_id=?
+            LEFT JOIN group_apps as ga
+                ON ga.app_id=a.app_id
+                AND ga.group_id=ug.group_id
+        |, $self->user_id, $self->user_id )->hashes
     };
 
-    push( @files, {
-        id => 'slatetheme',
-        path => 'themes/',
-        file => 'slate-theme/css/xtheme-slate.css',
+    # XXX
+    unshift( @files, {
+        id => 'core-suport',
+        path => 'core/',
+        file => 'support.js',
     });
+
+    my ( $theme_id, $theme_file ) = $self->ctx->db->query(qq|
+        SELECT t.theme_id, t.theme_file
+        FROM user_themes as ut
+            JOIN themes as t
+                ON t.theme_id=ut.theme_id
+        WHERE ut.user_id=?
+        LIMIT 1
+    |, $self->user_id )->list;
+
+    if ( $theme_id ) {
+        push( @files, {
+            id => 'theme-'.$theme_id,
+            path => '',
+            file => $theme_file,
+        });
+    }
 
     return \@files;
 }
