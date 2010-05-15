@@ -1327,7 +1327,7 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
                 $JIT.depends[ this.appId ] = { virtual: true, depends: this.requires };
             }
             $JIT({
-                method: 'GET',
+                method: 'DOM',
                 modulePath: 'apps/' + this.appName + '/',
                 scope: this,
                 callback: function( loaded ) {
