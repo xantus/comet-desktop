@@ -1,7 +1,7 @@
-.add {
+.add_item {
     background-image: url(../images/icons/add.png) !important;
 }
 
-.del {
+.del_item {
     background-image: url(../images/icons/close.png) !important;
 }

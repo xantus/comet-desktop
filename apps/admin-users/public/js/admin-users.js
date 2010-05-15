@@ -92,6 +92,14 @@ Ext.extend(CometDesktop.ux.admin.GridDropZone, Ext.dd.DropZone, {
   
 });
 
+CometDesktop.ux.admin.dummyData = {
+	data: [{
+		vch_user_name: 'root',
+		vch_email: 'foo@bar.com',
+		fk_roles_iroleid: 'Administrator'
+	}]
+};
+
 CometDesktop.ux.admin.UserAdminGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 	// override
 	initComponent : function() {
@@ -124,7 +132,8 @@ CometDesktop.ux.admin.UserAdminGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 			    fields: [ 'vch_user_name','vch_email','fk_roles_iroleid'],
 				baseParams: { 
 					test: 'test'	
-				}				
+				},		
+				data: CometDesktop.ux.admin.dummyData		
 			},
 			// force the grid to fit the space which is available
 			viewConfig: {
@@ -133,7 +142,7 @@ CometDesktop.ux.admin.UserAdminGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 			tbar: [{
 					text:'Add User'
 					,xtype: 'button'
-					,iconCls:'add'
+					,iconCls:'add_item'
 					,scope: this
 					,handler: function(){
 							var s = this.store;
@@ -145,7 +154,7 @@ CometDesktop.ux.admin.UserAdminGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 				'-',{
 					text: 'Remove User',
 					xtype: 'button',
-					iconCls: 'del',
+					iconCls: 'del_item',
 					handler: function(){
 						var grid = this.findParentByType('useradmingrid');
 						var rec = grid.getSelectionModel().getSelected();
@@ -200,6 +209,16 @@ Ext.extend(Ext.grid.GroupingView, {
     }
 });
 
+CometDesktop.ux.admin.dummyGroupData = {
+	data: [{
+		group_name: 'Admins',
+		user_name: 'root'
+	}, {
+		group_name: 'Users',
+		user_name: 'root'
+	}]
+};
+
 CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 	// override
 	initComponent : function() {
@@ -216,6 +235,7 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 			ddGroup: 'gridToGroup',
 			view: new Ext.grid.GroupingView({
             	forceFit:true,
+			    hideGroupedColumn: true,
             	groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})'
         	}),
 			sm: new Ext.grid.RowSelectionModel({singleSelect: true}),
@@ -230,7 +250,7 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 					root: 'data',
 					fields: [ 'group_name','user_name'  ]
 				}),
-            	//data: xg.dummyData,
+            	data: CometDesktop.ux.admin.dummyGroupData,
             	baseParams: { 
 					test: 'test'	
 				},
@@ -242,18 +262,18 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 				forceFit: true
 			},
 			tbar: [{
-				text:'Create Group'
+				text:'Add'
 				,xtype: 'button'
-				,iconCls:'add'
+				,iconCls:'add_item'
 				,scope: this
 				,handler: function(){
 						var s = this.store;
 						console.info(this);
 				}
 			},{
-				text:'Remove Group'
+				text:'Delete'
 				,xtype: 'button'
-				,iconCls:'del'
+				,iconCls:'del_item'
 				,scope: this
 				,handler: function(){
 						var s = this.store;
@@ -262,7 +282,9 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 			},{
 				text:'Remove From Group'
 				,xtype: 'button'
-				,iconCls:'del'
+				,iconCls:'del_item'
+				,itemId: 'remove-from-group'
+				,disabled: true
 				,scope: this
 				,handler: function(){
 						var s = this.store;
@@ -278,6 +300,27 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
   
  		this.dz = new CometDesktop.ux.admin.GridDropZone(this, {ddGroup:this.ddGroup || 'GridDD'});
 	}, // eo function onRender
+	initEvents: function(){
+		CometDesktop.ux.admin.UserGroupGrid.superclass.initEvents.call(this);
+		// any additional load click processing here
+		var groupGridSm = this.getSelectionModel();
+		groupGridSm.on('rowselect', this.onRowSelect, this);
+	 	groupGridSm.on('rowdeselect', this.onRowDeSelect, this);
+	}, 
+	onRowSelect: function(sm, rowIdx, r) {
+		console.info(this, r.data.group_name);
+		// Enable the Remove From Group Button
+		if (r.data.group_name === 'Users' || r.data.group_name === 'Admins') {
+			this.toolbars[0].getComponent('remove-from-group').disable();
+		} else {
+			this.toolbars[0].getComponent('remove-from-group').enable();
+		}
+	},
+	onRowDeSelect: function(sm, rowIdx, r) {
+		console.info(r);
+		// Disable the Remove From Group Button
+		this.toolbars[0].getComponent('remove-from-group').disable();
+	},
 	// add a method which updates the details
 	updateGroup: function(data) {
 		//this.tpl.overwrite(this.body, data);
@@ -289,7 +332,7 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 
 Ext.reg('usergroupgrid', CometDesktop.ux.admin.UserGroupGrid);
 
-CometDesktop.ux.admin.UserDetail = Ext.extend(Ext.FormPanel, {
+CometDesktop.ux.admin.UserFormDetail = Ext.extend(Ext.FormPanel, {
 	
 	initComponent:function() {
 		  
@@ -297,23 +340,56 @@ CometDesktop.ux.admin.UserDetail = Ext.extend(Ext.FormPanel, {
 		 var config = {
 			 defaultType:'textfield',
 			 //title: this.title,
-			 monitorValid:true
+			 monitorValid:true,
+			 layout: {
+	            type: 'vbox',
+	            align: 'stretch'  // Child items are stretched to full width
+	         },
+	         defaults: {
+	            xtype: 'textfield'
+	         },
+			 items: [{
+				labelWidth: 50,
+				xtype: 'fieldset',
+				defaultType: 'textfield',
+	            autoHeight: true,
+	            bodyStyle: Ext.isIE ? 'padding:0 0 5px 15px;' : 'padding:10px 15px;',
+	            border: false,
+	            style: {
+	                "margin-left": "10px", // when you add custom margin in IE 6...
+	                "margin-right": Ext.isIE6 ? (Ext.isStrict ? "-10px" : "-13px") : "0"  // you have to adjust for it somewhere else
+	            },
+	            items: [{
+	                fieldLabel: 'Name',
+	                name: 'vch_user_name'
+	            }]
+			}],
+			tbar: [{
+				text:'Save'
+				,xtype: 'button'
+				,iconCls:'save'
+				,scope: this
+				,handler: function(){
+						var s = this.store;
+						console.info(this);
+				}
+			}]
 		 }; // eo config object
 	  
 		 // apply config
 		 Ext.apply(this, Ext.apply(this.initialConfig, config));
 		  
 		 // call parent
-		 CometDesktop.ux.admin.UserDetail.superclass.initComponent.apply(this, arguments);
+		 CometDesktop.ux.admin.UserFormDetail.superclass.initComponent.apply(this, arguments);
 
 	}, // eo function initComponent	
 	onRender:function() {
-	 	CometDesktop.ux.admin.UserDetail.superclass.onRender.apply(this, arguments);
+	 	CometDesktop.ux.admin.UserFormDetail.superclass.onRender.apply(this, arguments);
 	 	this.getForm().waitMsgTarget = this.getEl();
 	  
 	}, // eo function onRender
 	initEvents: function(){
-		CometDesktop.ux.admin.UserDetail.superclass.initEvents.call(this);
+		CometDesktop.ux.admin.UserFormDetail.superclass.initEvents.call(this);
 	 	// any additional load click processing here
 	},    
 	onSuccess:function(form, action) {
@@ -328,12 +404,12 @@ CometDesktop.ux.admin.UserDetail = Ext.extend(Ext.FormPanel, {
 	}, 
 	updateForm: function(data) {
 		var form = this.getForm();	
-		//console.info('loading form data');
+		console.info('loading form data', form, data);
 		form.loadRecord(data);	
 	} // eo function updateForm
 });
 
-Ext.reg('userdetail', CometDesktop.ux.admin.UserDetail);
+Ext.reg('userformdetail', CometDesktop.ux.admin.UserFormDetail);
 
 CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
 	// override initComponent
@@ -367,27 +443,10 @@ CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
 					flex: 1
 				},{
 					title: 'User Detail',
-					xtype: 'userdetail',
-					itemId: 'userDetailForm',
+					xtype: 'userformdetail',
+					itemId: 'userFormDetail',
 					frame: true,
-					flex: 1,
-					items: [{
-						labelWidth: 90,
-						defaults: {width: 140, border:false},    // Default config options for child items
-						xtype: 'fieldset',
-						defaultType: 'textfield',
-			            autoHeight: true,
-			            bodyStyle: Ext.isIE ? 'padding:0 0 5px 15px;' : 'padding:10px 15px;',
-			            border: false,
-			            style: {
-			                "margin-left": "10px", // when you add custom margin in IE 6...
-			                "margin-right": Ext.isIE6 ? (Ext.isStrict ? "-10px" : "-13px") : "0"  // you have to adjust for it somewhere else
-			            },
-			            items: [{
-			                fieldLabel: 'Name',
-			                name: 'company'
-			            }]
-					}]
+					flex: 1
 				}]
 			}]
 		})
@@ -408,10 +467,10 @@ CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
 		// conflicts with the ComponentMgr
 		var detailPanel     = this.getComponent('detailPanel');
 		var userGroupGrid   = detailPanel.getComponent('userGroupGrid');
-		var userDetailForm  = detailPanel.getComponent('userDetailForm');
+		var userFormDetail  = detailPanel.getComponent('userFormDetail');
 		
 		userGroupGrid.updateGroup(r.data);
-		userDetailForm.updateForm(r.data);
+		userFormDetail.updateForm(r);
 	}
 });
 
