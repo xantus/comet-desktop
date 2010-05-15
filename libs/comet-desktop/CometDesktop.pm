@@ -7,6 +7,7 @@ use CometDesktopX::Session;
 use CometDesktop::Controller;
 use DBI;
 use DBIx::Simple;
+use File::Spec;
 
 use base 'Mojolicious';
 
@@ -45,14 +46,7 @@ sub startup {
 
     $self->_load_config;
     $self->_add_hooks;
-
-    # Use our own controller
-    $self->controller_class( 'CometDesktop::Controller' );
-
-    $self->routes->route( '/' )->via( 'get' )->to({ callback => sub { shift->redirect_to( '/desktop/' ) } });
-    $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
-    $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
-    $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
+    $self->_set_routes;
 
     return;
 }
@@ -102,6 +96,9 @@ sub _add_hooks {
 
 sub _load_config {
     my $self = shift;
+
+    # Use our own controller
+    $self->controller_class( 'CometDesktop::Controller' );
 
     $config = $self->plugin( multi_config => {
         files => [
@@ -177,20 +174,32 @@ sub _load_config {
 
     foreach( @{$config->{cometdesktop_apps}} ) {
         warn "configuring app $_->{app_id} : $_->{app_name} : $_->{app_desc}\n";
-        my $dir = $self->home->rel_dir( "apps/$_->{app_name}/public" );
+        my $dir = $self->home->rel_dir( File::Spec->catfile( 'apps', $_->{app_name}, 'public' ) );
         if ( -d $dir ) {
             warn "adding static fallback for apps/$_->{app_name}/ to $dir\n";
             $static->add( "/desktop/apps/$_->{app_name}/" => $dir );
         }
-        # XXX
-        #my $plug = $_->{app_name}; $plug =~ s/-/_/g;
-        #$self->plugin( $plug, $config );
+#        if ( -e File::Spec->catfile( $dir, 'plugin.conf' ) ) {
+#            my $plug = $_->{app_name}; $plug =~ s/-/_/g;
+#            $self->plugin( $plug, $config );
+#        }
     }
 
     if ( $self->mode eq 'development' ) {
         require Data::Dumper;
         warn Data::Dumper->Dump([$config],['config']);
     }
+
+    return;
+}
+
+sub _set_routes {
+    my $self = shift;
+
+    $self->routes->route( '/' )->via( 'get' )->to({ callback => sub { shift->redirect_to( '/desktop/' ) } });
+    $self->routes->route( '/desktop' )->via( 'get' )->to( 'desktop#root' )->name( 'desktop' );
+    $self->routes->route( '/desktop/login' )->via( 'post' )->to( 'desktop#login' );
+    $self->routes->route( '/desktop/logout' )->via( 'post' )->to( 'desktop#logout' );
 
     return;
 }
