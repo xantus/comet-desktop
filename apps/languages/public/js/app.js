@@ -9,7 +9,6 @@ CometDesktop.ux.LanguageSupport = Ext.extend( CometDesktop.Module, {
     id: 'languages-win',
 
     title: 'Language Support',
-    autoStart: true,
 
     init: function() {
         this.subscribe( this.appChannel, this.eventReceived, this );
