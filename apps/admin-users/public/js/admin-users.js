@@ -63,20 +63,247 @@ CometDesktop.ux.admin.manageGroupStore   = Ext.extend(Ext.data.GroupingStore, {
 // register an xtype with this class
 Ext.reg('managegroupstore', CometDesktop.ux.admin.manageGroupStore);
 
+CometDesktop.ux.admin.dummyGroupData = {
+	data: [{
+		group_name: 'Users',
+		group_count: '1',
+		creation_date: new Date(Date.parse('10/15/2006'))
+	}]
+};
+
+// Grig for grouping and managing the User groups and their properties
+CometDesktop.ux.admin.GroupAdminGrid = Ext.extend(Ext.grid.EditorGridPanel, {
+	// override
+	initComponent : function() {
+		Ext.apply(this, {
+			//title: 'Groups',
+	        columns: [
+	            {header: "Group Name", width: 100, dataIndex: 'group_name', sortable: true,
+				 editor: new Ext.form.TextField({
+                    allowBlank: false
+                 })
+				},
+				{header: "Total Members", width: 120, dataIndex: 'member_count', sortable: true},
+	      		{header: "Created", width: 50, dataIndex: 'creation_date', sortable: true}
+	        ],
+			
+			sm: new Ext.grid.RowSelectionModel({singleSelect: true}),
+			// Note the use of a storeId, this will register thisStore
+			// with the StoreMgr and allow us to retrieve it very easily.
+			store: {
+				xtype: 'managestore',
+				url:  '/desktop/useradmin',
+			    root: 'data',
+			    fields: [ 'group_name','member_count','creation_date'],
+				baseParams: { 
+					test: 'test'	
+				},		
+				data: CometDesktop.ux.admin.dummyGroupData		
+			},
+			// force the grid to fit the space which is available
+			viewConfig: {
+				forceFit: true
+			},
+			tbar: [{
+					text:'Add Group'
+					,xtype: 'button'
+					,iconCls:'add_item'
+					,scope: this
+					,handler: function(){
+							var s = this.store;
+							var r = new (s.recordType)({group_name:'', group_count:0, creation_date: new Date()});
+							s.add(r);
+							this.startEditing(s.indexOf(r), 0);
+					}
+				},
+				'-',{
+					text: 'Remove Group',
+					xtype: 'button',
+					iconCls: 'del_item',
+					handler: function(){
+						var grid = this.findParentByType('groupadmingrid');
+						var rec = grid.getSelectionModel().getSelected();
+						if (!rec) {
+							return false;
+						}
+						// Remove the User from the db
+						Ext.Ajax.request({
+							url: grid.getStore().url,
+							params: {},
+							scope: this,
+							success: function(response, options){
+								var responseObject = Ext.decode(response.responseText);
+								if (responseObject.data) {
+									if (responseObject.data.failure) {
+										Ext.Msg.alert("User Removal Failed", response.responseText);
+										return false;
+									}
+								}
+								grid.store.remove(rec);
+								grid.store.commitChanges();
+							},
+							failure: function(response, options){
+								Ext.Msg.alert(options.windowStrings.title, options.windowStrings.message + response.responseText);
+							}
+							
+						});
+						
+					}
+				}]
+		});
+		// finally call the superclasses implementation
+		CometDesktop.ux.admin.GroupAdminGrid.superclass.initComponent.call(this);
+	}
+});
+
+Ext.reg('groupadmingrid', CometDesktop.ux.admin.GroupAdminGrid);
+
+
+CometDesktop.ux.admin.dummyGroupPropertySourceData = {
+        "(name)": "My Object",
+        "Created": new Date(Date.parse('10/15/2006')),
+        "Available": false,
+        "Version": .01,
+        "Description": "A test object"
+};
+
+CometDesktop.ux.admin.GroupPropertyGrid = Ext.extend(Ext.grid.PropertyGrid, {
+	// override
+	initComponent : function() {
+		Ext.apply(this, {
+			// Pass in a column model definition
+			// Note that the DetailPageURL was defined in the record definition but is not used
+			// here. That is okay.
+			//title: 'Group Properties',
+			source: CometDesktop.ux.admin.dummyGroupPropertySourceData,
+			// force the grid to fit the space which is available
+			viewConfig: {
+				forceFit: true
+			},
+			tbar: [{
+				text:'Save'
+				,xtype: 'button'
+				,iconCls:'save'
+				,scope: this
+				,handler: function(){
+						Ext.MessageBox.prompt('Add Property', 'Enter group name:', this.addProperty, this);
+				}
+			}]
+		});
+		// finally call the superclasses implementation
+		CometDesktop.ux.admin.GroupPropertyGrid.superclass.initComponent.call(this);
+	},
+	onRender:function() {
+ 		CometDesktop.ux.admin.GroupPropertyGrid.superclass.onRender.apply(this, arguments);
+	}, // eo function onRender
+	initEvents: function(){
+		CometDesktop.ux.admin.GroupPropertyGrid.superclass.initEvents.call(this);
+		// any additional load click processing here
+	}, 
+	addProperty: function(btn, txt){
+		if (btn == 'ok' && txt != '') {
+			var s = this.store;
+			var u = new s.recordType({
+				group_name: txt,
+				user_name: -1
+			});
+			s.add(u);
+		}
+	},
+	// add a method which updates the details
+	updateProperty: function(data) {
+		//this.tpl.overwrite(this.body, data);
+	}
+});
+
+Ext.reg('grouppropertygrid', CometDesktop.ux.admin.GroupPropertyGrid);
+
+CometDesktop.ux.admin.GroupMasterDetail = Ext.extend(Ext.Panel, {
+	// override initComponent
+	initComponent: function() {
+		// used applyIf rather than apply so user could
+		// override the defaults
+		Ext.applyIf(this, {
+			
+			layout: 'border',
+			items: [{
+				xtype: 'groupadmingrid',
+				itemId: 'groupGridPanel',
+				region: 'west',
+				frame: true,
+				width: 500
+			},{
+				xtype: 'panel',
+				itemId: 'groupDetailPanel',
+				region: 'center',
+				layout:'vbox',
+				//hideBorders: true,
+				layoutConfig: {
+				    align : 'stretch',
+				    pack  : 'start'
+				},
+				items: [{
+					xtype: 'grouppropertygrid',
+					itemId: 'groupPropertyGrid',
+					frame: true,
+					flex: 1
+				}]
+			}]
+		})
+		// call the superclass's initComponent implementation
+		CometDesktop.ux.admin.GroupMasterDetail.superclass.initComponent.call(this);
+	},
+	// override initEvents
+	initEvents: function() {
+		// call the superclass's initEvents implementation
+		CometDesktop.ux.admin.GroupMasterDetail.superclass.initEvents.call(this);
+
+		var resultGridSm = this.getComponent('groupGridPanel').getSelectionModel();
+		resultGridSm.on('rowselect', this.onRowSelect, this);
+		resultGridSm.on('rowdeselect', this.onRowDeSelect, this);
+	},
+	onRowSelect: function(sm, rowIdx, r) {
+		var groupDetailPanel    = this.getComponent('groupDetailPanel');
+		var groupPropertyGrid   = groupDetailPanel.getComponent('groupPropertyGrid');
+		
+		this.loadProperty(groupPropertyGrid, r.data);
+	},
+	onRowDeSelect: function(sm, rowIdx, r) {
+		var detailPanel         = this.getComponent('groupDetailPanel');
+		var groupPropertyGrid   = detailPanel.getComponent('groupPropertyGrid');
+		
+		//groupPropertyGrid.clearProperty();
+	},
+	loadProperty: function(grid, data){
+		grid.setSource(data);
+	}
+});
+
+Ext.reg('groupmasterdetail', CometDesktop.ux.admin.GroupMasterDetail);
+
+// Drop Zone for the User Group grouping grid
 CometDesktop.ux.admin.GridDropZone = function(grid, config) {
  	this.grid = grid;
  	CometDesktop.ux.admin.GridDropZone.superclass.constructor.call(this, grid.view.scroller.dom, config);
 };
  
 Ext.extend(CometDesktop.ux.admin.GridDropZone, Ext.dd.DropZone, {
-  
+  	 /*onNodeOver : function(target, dd, e, data){ 
+            return Ext.dd.DropZone.prototype.dropAllowed;
+     },
+	 onNodeDrop : function(target, dd, e, data){
+            var rowIndex = this.grid.getView().findRowIndex(target);
+            var r = this.grid.getStore().getAt(rowIndex);
+            Ext.Msg.alert('Drop gesture', 'Dropped Record id ' + data.draggedRecord.id +
+                ' on Record id ' + r.id);
+            return true;
+     },*/
 	 onContainerOver:function(dd, e, data) {
-	 	console.info(dd, e, data);
+		//console.info(dd.getDragData(e).rowIndex);
 	 	return dd.grid !== this.grid ? this.dropAllowed : this.dropNotAllowed;
 	 }, // eo function onContainerOver
 	 onContainerDrop:function(dd, e, data) {
 		 if(dd.grid !== this.grid) {
-		 	 console.info(data.selections);
 		 	 var u = new this.grid.store.recordType({
 			    group_name        : 'test',
             	user_name         : data.selections[0].data.vch_user_name,
@@ -236,7 +463,13 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 			view: new Ext.grid.GroupingView({
             	forceFit:true,
 			    hideGroupedColumn: true,
-            	groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})'
+				showGroupName: true,
+				startCollapsed: true,
+				groupTextTpl: '{text} <tpl if="values.rs[0].data.user_name != -1">({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})</tpl>',
+            	getRowClass: function(rec) {
+            		if (rec.data.user_name === -1) return 'x-hide-display';
+            	}
+            	//groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})'
         	}),
 			sm: new Ext.grid.RowSelectionModel({singleSelect: true}),
 			// Note the use of a storeId, this will register thisStore
@@ -262,33 +495,13 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 				forceFit: true
 			},
 			tbar: [{
-				text:'Add'
+				text:'Manage Groups'
 				,xtype: 'button'
 				,iconCls:'add_item'
 				,scope: this
 				,handler: function(){
-						var s = this.store;
-						console.info(this);
-				}
-			},{
-				text:'Delete'
-				,xtype: 'button'
-				,iconCls:'del_item'
-				,scope: this
-				,handler: function(){
-						var s = this.store;
-						console.info(this);
-				}
-			},{
-				text:'Remove From Group'
-				,xtype: 'button'
-				,iconCls:'del_item'
-				,itemId: 'remove-from-group'
-				,disabled: true
-				,scope: this
-				,handler: function(){
-						var s = this.store;
-						console.info(this);
+					this.createGroupManageWindow();
+					//Ext.MessageBox.prompt('Add Group', 'Enter group name:', this.addGroupName, this);
 				}
 			}]
 		});
@@ -308,18 +521,37 @@ CometDesktop.ux.admin.UserGroupGrid = Ext.extend(Ext.grid.EditorGridPanel, {
 	 	groupGridSm.on('rowdeselect', this.onRowDeSelect, this);
 	}, 
 	onRowSelect: function(sm, rowIdx, r) {
-		console.info(this, r.data.group_name);
-		// Enable the Remove From Group Button
-		if (r.data.group_name === 'Users' || r.data.group_name === 'Admins') {
-			this.toolbars[0].getComponent('remove-from-group').disable();
-		} else {
-			this.toolbars[0].getComponent('remove-from-group').enable();
-		}
+		
 	},
 	onRowDeSelect: function(sm, rowIdx, r) {
-		console.info(r);
-		// Disable the Remove From Group Button
-		this.toolbars[0].getComponent('remove-from-group').disable();
+		
+	},
+	addGroupName: function(btn, txt){
+		if (btn == 'ok' && txt != '') {
+			var s = this.store;
+			var u = new s.recordType({
+				group_name: txt,
+				user_name: -1
+			});
+			s.add(u);
+		}
+	},
+	createGroupManageWindow: function(){
+		var win = new Ext.Window({
+			title       : 'Manage Groups',
+            layout      : 'fit',
+            width       : 800,
+            height      : 500,
+			hidden      : false,
+            plain       : true,
+            modal: true,
+            items       : { 
+            	xtype: 'groupmasterdetail',
+            }
+        });
+		
+        win.show();  
+		win.center(); 
 	},
 	// add a method which updates the details
 	updateGroup: function(data) {
@@ -371,7 +603,6 @@ CometDesktop.ux.admin.UserFormDetail = Ext.extend(Ext.FormPanel, {
 				,scope: this
 				,handler: function(){
 						var s = this.store;
-						console.info(this);
 				}
 			}]
 		 }; // eo config object
@@ -404,7 +635,6 @@ CometDesktop.ux.admin.UserFormDetail = Ext.extend(Ext.FormPanel, {
 	}, 
 	updateForm: function(data) {
 		var form = this.getForm();	
-		console.info('loading form data', form, data);
 		form.loadRecord(data);	
 	} // eo function updateForm
 });
@@ -478,14 +708,15 @@ Ext.reg('usermasterdetail', CometDesktop.ux.admin.UserMasterDetail);
 
 
 CometDesktop.ux.admin.UserAdmin = Ext.extend( CometDesktop.Module, {
-
+	
     appId: '8cf006705cb011df89f4a7889ed35127',
     appName: 'admin-users',
-
+	
     id: 'admin-users-win',
     title: 'User Admin',
     appChannel: '/desktop/system/admin/users',
-    requires: [
+    autoStart: true,
+	requires: [
         'css/admin-users.css'
     ],
     init: function() {
@@ -502,16 +733,19 @@ CometDesktop.ux.admin.UserAdmin = Ext.extend( CometDesktop.Module, {
         */
     },
 
-    startup: function() {
-        this.createWindow();
-    },
-
     eventReceived: function( ev ) {
-        if ( ev.action == 'launch' )
-            this.createWindow();
+        switch ( ev.action ) {
+            case 'launch':
+                this.start();
+                break;
+
+            case 'startup':
+                this.startup();
+                break;
+        }
     },
 
-    createWindow : function(){
+    startup : function(){
         var win = app.getWindow( this.id );
         if ( !win )
             win = this.create();
