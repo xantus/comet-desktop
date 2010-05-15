@@ -36,10 +36,16 @@ sub login {
     }
 
     if ( $self->user->logged_in ) {
+        my $theme = $self->user->theme;
+        if ( $theme ) {
+            my $v = $self->config->{ext_version};
+            $theme =~ s/\[ext_version\]/$v/;
+        }
         $self->render_json({
             success => $self->true,
             data => {
                 nickname => $self->user->user_name,
+                ( $theme ) ? ( theme => $theme ) : (),
                 load => $self->user->app_files,
             }
         });

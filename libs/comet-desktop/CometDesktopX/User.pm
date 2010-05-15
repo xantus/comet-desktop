@@ -236,8 +236,14 @@ sub app_files {
         file => 'support.js',
     });
 
-    my ( $theme_id, $theme_file ) = $self->ctx->db->query(qq|
-        SELECT t.theme_id, t.theme_file
+    return \@files;
+}
+
+sub theme {
+    my $self = shift;
+
+    my ( $theme_file ) = $self->ctx->db->query(qq|
+        SELECT t.theme_file
         FROM user_themes as ut
             JOIN themes as t
                 ON t.theme_id=ut.theme_id
@@ -245,15 +251,7 @@ sub app_files {
         LIMIT 1
     |, $self->user_id )->list;
 
-    if ( $theme_id ) {
-        push( @files, {
-            id => 'theme-'.$theme_id,
-            path => '',
-            file => $theme_file,
-        });
-    }
-
-    return \@files;
+    return $theme_file;
 }
 
 1;

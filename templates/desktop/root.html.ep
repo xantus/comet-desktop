@@ -52,6 +52,7 @@
 
 <!-- ExtJS CSS -->
 <link rel="stylesheet" type="text/css" href="lib/<%= ext_version %>/resources/css/ext-all.css" />
+<link id="cd-theme" rel="stylesheet" type="text/css" href="lib/<%= ext_version %>/resources/css/xtheme-gray.css" />
 
 <!-- CSS -->
 <link rel="stylesheet" type="text/css" href="css/desktop.css" />

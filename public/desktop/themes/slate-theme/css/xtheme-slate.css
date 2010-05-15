@@ -730,7 +730,7 @@ body.x-body-masked .x-window-mc, body.x-body-masked .x-window-plain .x-window-mc
 /* Layout */
 
 .x-border-layout-ct{
-/*    background:#f0f0f0; */
+    background:#f0f0f0;
 }
 .x-accordion-hd{
 	background-image:url(../images/slate/panel/light-hd.gif);

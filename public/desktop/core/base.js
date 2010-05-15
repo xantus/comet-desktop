@@ -168,13 +168,20 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
         this.viewport.doLayout();
 
         var manifest = [];
+        var theme;
 
         if ( ev.res && ev.res.data ) {
             if ( ev.res.data.load )
                 manifest = manifest.concat( ev.res.data.load );
+            // TBD - user settings store
+            if ( ev.res.data.theme )
+                theme = ev.res.data.theme;
             if ( ev.res.data.nickname )
                Ext.getCmp( 'system-user-menu' ).setText( ev.res.data.nickname );
         }
+
+        if ( theme )
+            this.setTheme( theme );
 
         var apps = [];
         Ext.each( manifest, function( o ) {
@@ -230,6 +237,21 @@ CometDesktop.App = Ext.extend( Ext.util.Observable, {
             scope: this
         });
 */
+    },
+
+    setTheme: function( url ) {
+        var el = Ext.getDom( 'cd-theme' );
+        if ( el ) {
+            el.setAttribute( 'href', url );
+        } else {
+            Ext.select( 'head' ).createChild({
+                tag: 'link',
+                id: 'cd-theme',
+                rel: 'stylesheet',
+                href: url,
+                type: 'text/css'
+            });
+        }
     },
 
     eventLogout: function() {
