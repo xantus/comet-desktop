@@ -113,7 +113,7 @@ CREATE TABLE apps (
 
 INSERT INTO apps VALUES('b4e000f85ca711df9f47dfe6670e4c36','samples','js/samples.js','Sample Apps');
 INSERT INTO apps VALUES('8cf006705cb011df89f4a7889ed35127','admin-users','js/admin-users.js','User Admin');
-INSERT INTO apps VALUES('16ae3b3c5fb011df802bcb8955b62d7f','languages','js/languages.js','Languages');
+INSERT INTO apps VALUES('16ae3b3c5fb011df802bcb8955b62d7f','languages','js/app.js','Language Support');
 
 CREATE TABLE user_apps (
         user_id   VARCHAR(40) NOT NULL,

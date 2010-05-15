@@ -1309,18 +1309,22 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
     constructor: function( config ) {
         Ext.apply( this, config );
 
-        // TBD use id instead?
         if ( !this.id )
             this.id = app.id( 'app-' );
 
-        // TBD use channel instead?
         if ( !this.appChannel )
             this.appChannel = '/desktop/app/' + this.id;
 
-        this.init( config );
+        this.init.apply( this, arguments );
 
-        if ( this.requires ) {
-            //Ext.apply( $JIT.depends, this.requires );
+        this.loaded = false;
+
+        if ( this.autoStart )
+            this.publish( this.appChannel, { action: 'launch', autoStart: true } );
+    },
+
+    start: function() {
+        if ( !this.loaded && this.requires && this.requires.length ) {
             if ( $JIT.depends[ this.appId ] ) {
                 $JIT.depends[ this.appId ].depends = $JIT.depends[ this.appId ].depends.concat( this.requires );
             } else {
@@ -1331,17 +1335,19 @@ CometDesktop.Module = Ext.extend( Ext.util.Observable, {
                 modulePath: 'apps/' + this.appName + '/',
                 scope: this,
                 callback: function( loaded ) {
-                    if ( loaded )
-                        this.startup();
+                    if ( loaded ) {
+                        this.loaded = true;
+                        this.publish( this.appChannel, { action: 'startup' } );
+                    }
                 },
             }, '@' + this.appId );
         } else {
-            this.startup();
+            this.loaded = true;
+            this.publish( this.appChannel, { action: 'startup' } );
         }
     },
 
     init: Ext.emptyFn,
-    startup: Ext.emptyFn,
 
     register: function( ev ) {
         this.publish( app.channels.registerApp, ev );
@@ -1748,8 +1754,8 @@ new CometDesktop.App();
 CometDesktop.localeStore = new Ext.data.SimpleStore({
     fields: [ 'locale', 'english', 'lang' ],
     data: [
-        [ 'en_US', 'English', 'United States' ],
-        [ 'en_UK', 'English', 'United Kingdom' ],
+        [ 'en_US', 'English', 'US English' ],
+        [ 'en_UK', 'English', 'UK English' ],
         [ 'es_MX', 'Spanish', 'Español' ],
         [ 'fr_FR', 'French', 'Français' ],
         [ 'de_DE', 'German', 'Deutsch' ],
