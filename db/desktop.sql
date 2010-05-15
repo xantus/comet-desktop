@@ -146,7 +146,7 @@ CREATE TABLE themes (
         UNIQUE(theme_id)
     );
 
-INSERT INTO themes VALUES('852bc8165fb711dfbca93bc171e9abdc','slate-theme/css/xtheme-slate.css','Slate');
+INSERT INTO themes VALUES('852bc8165fb711dfbca93bc171e9abdc','themes/slate-theme/css/xtheme-slate.css','Slate');
 INSERT INTO themes VALUES('ed2dfd445fb711dfba4c3f131a9643dc','lib/[ext_version]/resources/css/xtheme-gray.css','Ext Gray');
 INSERT INTO themes VALUES('fd23989e5fb711df98dab77dd90a2596','lib/[ext_version]/resources/css/xtheme-blue.css','Ext Blue');
 INSERT INTO themes VALUES('03ceb6385fb811dfa954ef1dd51f978a','lib/[ext_version]/resources/css/xtheme-access.css','Ext Access');
