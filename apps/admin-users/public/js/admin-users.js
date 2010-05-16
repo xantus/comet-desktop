@@ -237,6 +237,7 @@ CometDesktop.ux.admin.GroupMasterDetail = Ext.extend(Ext.Panel, {
 				itemId: 'groupDetailPanel',
 				region: 'center',
 				layout:'vbox',
+				border: false,
 				//hideBorders: true,
 				layoutConfig: {
 				    align : 'stretch',
@@ -660,6 +661,7 @@ CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
 				itemId: 'detailPanel',
 				region: 'center',
 				layout:'vbox',
+				border: false,
 				//hideBorders: true,
 				layoutConfig: {
 				    align : 'stretch',
