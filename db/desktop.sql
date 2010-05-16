@@ -1,12 +1,4 @@
-/*
-DROP TABLE users;
-DROP TABLE user_data;
-DROP TABLE groups;
-DROP TABLE access_keys;
-DROP TABLE group_keys;
-DROP TABLE access_key_exclude;
-DROP TABLE user_groups;
-*/
+
 DROP TABLE IF EXISTS `desktop`.`db_data` ;
 CREATE TABLE db_data (
     data_key   VARCHAR(255) PRIMARY KEY,
@@ -19,11 +11,12 @@ DROP TABLE IF EXISTS `desktop`.`users` ;
 CREATE TABLE users (
         user_id       VARCHAR(40) PRIMARY KEY,
         user_name     VARCHAR(255) NOT NULL,
+        user_email    VARCHAR(100),
         user_pass     VARCHAR(255) NOT NULL,
         UNIQUE(user_id)
     );
-INSERT INTO users VALUES('05a1ff3e599011df83253fac66072281','root','foobar');
-INSERT INTO users VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','guest','');
+INSERT INTO users VALUES('05a1ff3e599011df83253fac66072281','root','root@cometdesktop.com', 'foobar');
+INSERT INTO users VALUES('3ea1474a5a6c11df8f3df3def6f9cbcc','guest','guest@cometdesktop.com', '');
 
 /* general user data table */
 DROP TABLE IF EXISTS `desktop`.`user_data` ;
