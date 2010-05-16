@@ -219,7 +219,6 @@ CometDesktop.ux.admin.GroupPropertyGrid = Ext.extend(Ext.grid.PropertyGrid, {
 Ext.reg('grouppropertygrid', CometDesktop.ux.admin.GroupPropertyGrid);
 
 CometDesktop.ux.admin.GroupMasterDetail = Ext.extend(Ext.Panel, {
-<<<<<<< ours
 	// override initComponent
 	initComponent: function() {
 		// used applyIf rather than apply so user could
@@ -278,8 +277,7 @@ CometDesktop.ux.admin.GroupMasterDetail = Ext.extend(Ext.Panel, {
 	},
 	loadProperty: function(grid, data){
 		grid.setSource(data);
-	}
-=======
+	},
     // override initComponent
     initComponent: function() {
         // used applyIf rather than apply so user could
@@ -338,7 +336,6 @@ CometDesktop.ux.admin.GroupMasterDetail = Ext.extend(Ext.Panel, {
     loadProperty: function(grid, data){
         grid.setSource(data);
     }
->>>>>>> theirs
 });
 
 Ext.reg('groupmasterdetail', CometDesktop.ux.admin.GroupMasterDetail);
@@ -698,7 +695,6 @@ CometDesktop.ux.admin.UserFormDetail = Ext.extend(Ext.FormPanel, {
 Ext.reg('userformdetail', CometDesktop.ux.admin.UserFormDetail);
 
 CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
-<<<<<<< ours
 	// override initComponent
 	initComponent: function() {
 		// used applyIf rather than apply so user could
@@ -759,8 +755,7 @@ CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
 		
 		userGroupGrid.updateGroup(r.data);
 		userFormDetail.updateForm(r);
-	}
-=======
+	},
     // override initComponent
     initComponent: function() {
         // used applyIf rather than apply so user could
@@ -810,18 +805,17 @@ CometDesktop.ux.admin.UserMasterDetail = Ext.extend(Ext.Panel, {
         var resultGridSm = this.getComponent('gridPanel').getSelectionModel();
         resultGridSm.on('rowselect', this.onRowSelect, this);
     },
-    onRowSelect: function(sm, rowIdx, r) {
-        // getComponent will retrieve itemId's or id's. Note that itemId's
-        // are scoped locally to this instance of a component to avoid
-        // conflicts with the ComponentMgr
-        var detailPanel     = this.getComponent('detailPanel');
-        var userGroupGrid   = detailPanel.getComponent('userGroupGrid');
-        var userFormDetail  = detailPanel.getComponent('userFormDetail');
-
-        userGroupGrid.updateGroup(r.data);
-        userFormDetail.updateForm(r);
-    }
->>>>>>> theirs
+    onRowSelect: function(sm, rowIdx, r){
+		// getComponent will retrieve itemId's or id's. Note that itemId's
+		// are scoped locally to this instance of a component to avoid
+		// conflicts with the ComponentMgr
+		var detailPanel = this.getComponent('detailPanel');
+		var userGroupGrid = detailPanel.getComponent('userGroupGrid');
+		var userFormDetail = detailPanel.getComponent('userFormDetail');
+		
+		userGroupGrid.updateGroup(r.data);
+		userFormDetail.updateForm(r);
+	}
 });
 
 Ext.reg('usermasterdetail', CometDesktop.ux.admin.UserMasterDetail);
